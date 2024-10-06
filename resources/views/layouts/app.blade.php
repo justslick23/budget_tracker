@@ -1,75 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>@yield('title', 'Dashboard')</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>@yield('title', 'Kaiadmin - Bootstrap 5 Admin Dashboard')</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, shrink-to-fit=no">
+    <link rel="icon" href="{{ asset('assets/img/kaiadmin/favicon.ico') }}" type="image/x-icon">
 
-    <!-- AdminKit CSS -->
-    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-	<link rel="shortcut icon" href="img/icons/icon-48x48.png" />
-	<link rel="canonical" href="https://demo-basic.adminkit.io/" />
+    <!-- Fonts and icons -->
+    <script src="{{ asset('assets/js/plugin/webfont/webfont.min.js') }}"></script>
+    <script>
+        WebFont.load({
+            google: { families: ["Public Sans:300,400,500,600,700"] },
+            custom: {
+                families: [
+                    "Font Awesome 5 Solid",
+                    "Font Awesome 5 Regular",
+                    "Font Awesome 5 Brands",
+                    "simple-line-icons",
+                ],
+                urls: ["{{ asset('assets/css/fonts.min.css') }}"],
+            },
+            active: function () {
+                sessionStorage.fonts = true;
+            },
+        });
+    </script>
 
-    <!-- Include Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <!-- Include Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <!-- Include Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Include DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
-
-    <style>
-        #sidebar-wrapper {
-            width: 250px; /* Set your desired width */
-            transition: all 0.3s ease; /* Smooth transition */
-        }
-
-        #sidebar-wrapper.toggled {
-            width: 0; /* Collapsed state */
-            overflow: hidden; /* Prevent content overflow */
-        }
-    </style>
-
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/plugins.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/kaiadmin.min.css') }}">
+    <!-- CSS Just for demo purpose, don't include it in your project -->
+    <link rel="stylesheet" href="{{ asset('assets/css/demo.css') }}">
 </head>
+
 <body>
-    <div class="d-flex" id="wrapper">
-        <!-- Sidebar -->
-        <div class="bg-light border-end" id="sidebar-wrapper">
-            @include('layouts.sidebar') <!-- Include your sidebar layout here -->
-        </div>
 
-        <!-- Page content wrapper -->
-        <div id="page-content-wrapper" class="w-100">
-            <div class="container-fluid">
-                <!-- Include Navbar -->
-                @include('layouts.navbar') <!-- Include your navbar layout here -->
+    <div id="wrapper">
+    @include('layouts.sidebar') <!-- Include your sidebar here -->
 
-                <main class="content">
-                    @yield('content')
-                </main>
+        <div class="main-panel">
+           
+            @include('layouts.navbar') <!-- Include your navbar here -->
+
+            <div class="content">
+                @yield('content')
             </div>
-
-            @yield('scripts')
-            <!-- Footer -->
         </div>
     </div>
 
-    <!-- AdminKit JS -->
-    <script src="{{ asset('js/app.js') }}"></script>
-    <script>
-        $(document).ready(function () {
-            // Toggle sidebar
-            $('.js-sidebar-toggle').on('click', function () {
-                $('#sidebar-wrapper').toggleClass('toggled');
-            });
-        });
-    </script>
+   <!-- Scripts Blade Template: scripts.blade.php -->
+<script src="{{ asset('assets/js/core/jquery-3.7.1.min.js') }}"></script>
+<script src="{{ asset('assets/js/core/popper.min.js') }}"></script>
+<script src="{{ asset('assets/js/core/bootstrap.min.js') }}"></script>
+
+<!-- jQuery Scrollbar -->
+<script src="{{ asset('assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js') }}"></script>
+
+<!-- Chart JS -->
+<script src="{{ asset('assets/js/plugin/chart.js/chart.min.js') }}"></script>
+
+<!-- jQuery Sparkline -->
+<script src="{{ asset('assets/js/plugin/jquery.sparkline/jquery.sparkline.min.js') }}"></script>
+
+<!-- Chart Circle -->
+<script src="{{ asset('assets/js/plugin/chart-circle/circles.min.js') }}"></script>
+
+<!-- Datatables -->
+<script src="{{ asset('assets/js/plugin/datatables/datatables.min.js') }}"></script>
+
+<!-- Bootstrap Notify -->
+<script src="{{ asset('assets/js/plugin/bootstrap-notify/bootstrap-notify.min.js') }}"></script>
+
+<!-- jQuery Vector Maps -->
+<script src="{{ asset('assets/js/plugin/jsvectormap/jsvectormap.min.js') }}"></script>
+<script src="{{ asset('assets/js/plugin/jsvectormap/world.js') }}"></script>
+
+<!-- Sweet Alert -->
+<script src="{{ asset('assets/js/plugin/sweetalert/sweetalert.min.js') }}"></script>
+
+<!-- Kaiadmin JS -->
+<script src="{{ asset('assets/js/kaiadmin.min.js') }}"></script>
+
+
+    @yield('scripts')
 </body>
+
 </html>
