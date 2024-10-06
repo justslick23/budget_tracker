@@ -68,13 +68,27 @@
 @endpush
 @section('scripts')
 <!-- Include DataTable initialization -->
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+
+<!-- DataTables Responsive CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- DataTables Responsive JS -->
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
 <script>
 $(document).ready(function() {
     $('#expensesTable').DataTable({
         // Optional: Customize DataTable settings here
+        responsive: true,
+
         "order": [[1, "desc"]], // Default sorting by year
         "lengthMenu": [5, 10, 25, 50], // Page length options
     });

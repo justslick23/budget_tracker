@@ -126,6 +126,7 @@
                     <h6 class="m-0 font-weight-bold text-primary">Recent Transactions</h6>
                 </div>
                 <div class="card-body">
+                    <div class="table-responsive">
                     <table class="table table-hover" id="transactionsTable">
                         <thead class="thead-light">
                             <tr>
@@ -158,6 +159,8 @@
                             @endforeach
                         </tbody>
                     </table>
+                    </div>
+                    
                 </div>
             </div>
         </div>

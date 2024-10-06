@@ -19,6 +19,7 @@
         </a>
     </div>
 
+    <div class="table-responsive">
     <table class="table" id = "budgetsTable">
         <thead>
             <tr>
@@ -56,18 +57,33 @@
             @endforeach
         </tbody>
     </table>
+    </div>
+
+   
 
 </div>
 @endsection
 
 @section('scripts')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+
+<!-- DataTables Responsive CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- DataTables JS -->
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- DataTables Responsive JS -->
+<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 
 <script>
     $(document).ready(function() {
         $('#budgetsTable').DataTable({
             // You can customize the DataTable options here
+            responsive: true,
             "paging": true,
             "searching": true,
             "ordering": true,
