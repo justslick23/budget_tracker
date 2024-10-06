@@ -8,6 +8,7 @@ use App\Models\Budget;
 use Carbon\Carbon;
 
 use Illuminate\Http\Request;
+use App\Notifications\IncomeRecorded;
 
 class IncomeController extends Controller
 {
@@ -54,10 +55,34 @@ class IncomeController extends Controller
             ->where('month', $currentMonthNumber)
             ->increment('amount', $income->amount);
     }
+
+    auth()->user()->notify(new IncomeRecorded($income->amount, $income->source));
+
     
     
         return redirect()->route('incomes.index')->with('success', 'Income added successfully and budget updated.');
     }
     
+    public function destroy($id)
+    {
+        // Find the income by ID
+        $income = Income::where('user_id', auth()->id())->findOrFail($id);
+        
+        // Optionally, update the budget amount
+        $currentMonthNumber = Carbon::now()->format('m');
+        $budget = Budget::where('user_id', auth()->id())
+            ->where('month', $currentMonthNumber)
+            ->first();
+
+        if ($budget) {
+            $budget->amount -= $income->amount; // Subtract the income from the budget amount
+            $budget->save(); // Save the updated budget
+        }
+
+        // Delete the income
+        $income->delete();
+
+        return redirect()->route('incomes.index')->with('success', 'Income deleted successfully.');
+    }
     
 }

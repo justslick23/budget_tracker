@@ -3,6 +3,15 @@
 @section('content')
 <div class="container">
     <h1 class="mb-4">Budgets</h1>
+  <!-- Success Message Banner -->
+  @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    @endif
 
     <div class="mb-3">
         <a href="{{ route('budgets.create') }}" class="btn btn-primary">
@@ -10,13 +19,14 @@
         </a>
     </div>
 
-    <table class="table ">
+    <table class="table" id = "budgetsTable">
         <thead>
             <tr>
                 <th>Month</th>
                 <th>Year</th>
+                <th>Category</th>
                 <th>Allocated Amount</th>
-                <th>Total Expenses</th>
+                <th>Total Spent</th>
                 <th>Remaining Balance</th>
                 <th>Actions</th>
             </tr>
@@ -24,8 +34,9 @@
         <tbody>
             @foreach ($budgets as $budget)
             <tr>
-            <td>{{ \Carbon\Carbon::create()->month($budget->month)->format('F') }}</td> <!-- Display full month name -->
+                <td>{{ \Carbon\Carbon::create()->month($budget->month)->format('F') }}</td> <!-- Full month name -->
                 <td>{{ $budget->year }}</td>
+                <td>{{ $budget->category->name }}</td> <!-- Assuming category has a 'name' attribute -->
                 <td>M{{ number_format($budget->amount, 2) }}</td>
                 <td>M{{ number_format($budget->spent, 2) }}</td>
                 <td>M{{ number_format($budget->amount - $budget->spent, 2) }}</td>
@@ -46,10 +57,25 @@
         </tbody>
     </table>
 
-    {{ $budgets->links() }} <!-- Pagination links -->
 </div>
 @endsection
 
 @section('scripts')
-<!-- Include any additional scripts here -->
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+    $(document).ready(function() {
+        $('#budgetsTable').DataTable({
+            // You can customize the DataTable options here
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "order": [[3, "desc"]], // Order by date column
+            "language": {
+                "emptyTable": "No transactions available"
+            }
+        });
+    });
+</script>
 @endsection

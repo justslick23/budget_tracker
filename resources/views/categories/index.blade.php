@@ -5,6 +5,15 @@
     <div class="row">
         <div class="col-md-12">
             <h1 class="mb-4">Categories</h1>
+             <!-- Success Message Banner -->
+  @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    @endif
             <a href="{{ route('categories.create') }}" class="btn btn-primary mb-3">Add Category</a>
 
             @if (session('success'))

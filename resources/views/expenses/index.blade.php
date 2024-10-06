@@ -3,7 +3,15 @@
 @section('content')
 <div class="container-fluid">
     <h2 class="mb-4">Expenses</h2>
-
+ <!-- Success Message Banner -->
+ @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+        </div>
+    @endif
     <div class="mb-3">
         <a href="{{ route('expenses.create') }}" class="btn btn-primary">
             <i class="fas fa-plus-circle"></i> Add Expense
@@ -11,7 +19,7 @@
     </div>
 
     <div class="table-responsive">
-        <table class="table table-striped">
+        <table class="table table-striped" id = "expensesTable">
             <thead>
                 <tr>
                     <th>#</th>
@@ -58,3 +66,19 @@
     }
 </style>
 @endpush
+@section('scripts')
+<!-- Include DataTable initialization -->
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function() {
+    $('#expensesTable').DataTable({
+        // Optional: Customize DataTable settings here
+        "order": [[1, "desc"]], // Default sorting by year
+        "lengthMenu": [5, 10, 25, 50], // Page length options
+    });
+});
+</script>
+@endsection
+

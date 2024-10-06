@@ -18,12 +18,24 @@
     <!-- Include Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <!-- Include Bootstrap JS -->
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Include Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Include DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+
+    <style>
+        #sidebar-wrapper {
+            width: 250px; /* Set your desired width */
+            transition: all 0.3s ease; /* Smooth transition */
+        }
+
+        #sidebar-wrapper.toggled {
+            width: 0; /* Collapsed state */
+            overflow: hidden; /* Prevent content overflow */
+        }
+    </style>
 
 </head>
 <body>
@@ -46,11 +58,18 @@
 
             @yield('scripts')
             <!-- Footer -->
-            @include('layouts.footer')
         </div>
     </div>
 
     <!-- AdminKit JS -->
     <script src="{{ asset('js/app.js') }}"></script>
+    <script>
+        $(document).ready(function () {
+            // Toggle sidebar
+            $('.js-sidebar-toggle').on('click', function () {
+                $('#sidebar-wrapper').toggleClass('toggled');
+            });
+        });
+    </script>
 </body>
 </html>

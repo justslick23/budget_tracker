@@ -18,6 +18,19 @@
                     @endfor
                 </select>
             </div>
+
+            <div class="mb-3">
+    <label for="category_id" class="form-label">Category</label>
+    <select class="form-select @error('category_id') is-invalid @enderror" id="category_id" name="category_id" required>
+        <option value="" disabled selected>Select a category</option>
+        @foreach ($categories as $category) <!-- Assuming you pass $categories to your view -->
+            <option value="{{ $category->id }}">{{ $category->name }}</option>
+        @endforeach
+    </select>
+    @error('category_id')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
             <div class="mb-3">
                 <label for="amount" class="form-label">Budget Amount</label>
                 <input type="number" name="amount" id="amount" class="form-control" required>

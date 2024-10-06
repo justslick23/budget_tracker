@@ -10,7 +10,9 @@ class Expense extends Model
     use HasFactory;
 
     protected $fillable = ['amount', 'category_id', 'description', 'date', 'user_id'];
-
+    protected $casts = [
+        'date' => 'datetime', // Automatically casts date to a Carbon instance
+    ];
     public function user()
 {
     return $this->belongsTo(User::class);

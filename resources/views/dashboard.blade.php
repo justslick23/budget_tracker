@@ -23,7 +23,7 @@
                     <div class="rounded-circle bg-white d-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
                         <i class="fas fa-dollar-sign text-success" style="font-size: 1.5rem;"></i>
                     </div>
-                    <h2 class="ml-10 mb-0" style="margin-left: 4%; color: white;">M{{ number_format($totalIncome, 2) }}</h2>
+                    <h2 class="ml-10 mb-0" style="margin-left: 4%; color: white;"><strong>M{{ number_format($totalIncome, 2) }}</strong></h2>
                 </div>
                 <p class="text-white-50">+{{ number_format($incomePercentageChange, 2) }}% since last month</p>
             </div>
@@ -39,7 +39,7 @@
                     <div class="rounded-circle bg-white d-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
                         <i class="fas fa-credit-card text-danger" style="font-size: 1.5rem;"></i>
                     </div>
-                    <h2 class="ml-4 mb-0" style="margin-left: 4%; color: white;">M{{ number_format($totalExpenses, 2) }}</h2>
+                    <h2 class="ml-4 mb-0" style="margin-left: 4%; color: white;"><strong>M{{ number_format($totalExpenses, 2) }}</strong></h2>
                 </div>
                 <p class="text-white-50">-{{ number_format($expensesPercentageChange, 2) }}% since last month</p>
             </div>
@@ -57,7 +57,7 @@
                     <div class="rounded-circle bg-white d-flex justify-content-center align-items-center" style="width: 50px; height: 50px;">
                         <i class="fas fa-calendar-alt text-info" style="font-size: 1.5rem;"></i>
                     </div>
-                    <h2 class="ml-4 mb-0" style="margin-left: 4%; color: white;">M{{ number_format($monthlyBudget, 2) }}</h2>
+                    <h2 class="ml-4 mb-0" style="margin-left: 4%; color: white;"><strong>M{{ number_format($monthlyBudget, 2) }}</strong></h2>
                 </div>
                 <p class="text-white-50">-5% since last month</p>
             </div>
@@ -73,7 +73,7 @@
                     <div class="rounded-circle bg-white d-flex justify-content-center align-items-center" style="width: 50px; height: 50px;"> <!-- Smaller icon container -->
                     <i class="fas fa-money-bill-wave text-purple" style="font-size: 1.5rem;"></i>
                     </div>
-                    <h2 class="ml-4 mb-0" style="margin-left: 4%; color: white;">M{{ number_format($remainingBudget, 2) }}</h2> <!-- Shifted amount -->
+                    <h2 class="ml-4 mb-0" style="margin-left: 4%; color: white;"><strong>M{{ number_format($remainingBudget, 2) }}</strong></h2> <!-- Shifted amount -->
                 </div>
                 <p class="text-white-50">{{ $remainingBudget < 0 ? 'Overspent' : 'Remaining' }} this month</p>
             </div>
