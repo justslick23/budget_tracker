@@ -119,7 +119,9 @@ protected function sendSmsNotification($expense)
     $twilio = new Client(env('TWILIO_SID'), env('TWILIO_AUTH_TOKEN'));
 
     // Define the message content
-    $message = "An expense of {$expense->amount} has been recorded in the {$expense->category->name} category.";
+  // Format the amount as currency
+  $formattedAmount = number_format($expense->amount, 2); // Format to 2 decimal places
+  $message = "An expense of M $formattedAmount  ($expense->description) has been recorded in the {$expense->category->name} category.";
 
     // Send SMS
     $twilio->messages->create(
