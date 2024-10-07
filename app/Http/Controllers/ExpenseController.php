@@ -133,7 +133,7 @@ protected function sendSmsNotification($expense)
     );
 
     $twilio->messages->create(
-        "whatsapp:{$user->phone_number}", // Ensure this is a WhatsApp number
+        "whatsapp:{auth()->user()->phone_number}", // Ensure this is a WhatsApp number
         [
             'from' => env('TWILIO_WHATSAPP_NUMBER'), // Twilio WhatsApp number
             'body' => $message
