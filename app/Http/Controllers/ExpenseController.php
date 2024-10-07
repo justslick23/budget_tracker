@@ -112,32 +112,46 @@ public function destroy($id)
         return redirect()->route('expenses.index')->with('success', 'Expense deleted successfully.');
     }
     
-    // Method to send an SMS using Twilio
-protected function sendSmsNotification($expense)
+
+    protected function sendSmsNotification($expense)
 {
     // Initialize Twilio Client
     $twilio = new Client(env('TWILIO_SID'), env('TWILIO_AUTH_TOKEN'));
 
-    // Define the message content
-  // Format the amount as currency
-  $formattedAmount = number_format($expense->amount, 2); // Format to 2 decimal places
-  $message = "An expense of M $formattedAmount  ($expense->description) has been recorded in the {$expense->category->name} category.";
+    // Format the amount as currency
+    $formattedAmount = number_format($expense->amount, 2); // Format to 2 decimal places
+    $message = "An expense of M {$formattedAmount} ({$expense->description}) has been recorded in the {$expense->category->name} category.";
+
+    // Get the user's phone number directly from the database
+    $userPhoneNumber = auth()->user()->phone_number; // Already in correct format
 
     // Send SMS
-    $twilio->messages->create(
-        auth()->user()->phone_number, // Send to user's phone number
-        [
-            'from' => env('TWILIO_PHONE_NUMBER'), // Twilio phone number
-            'body' => $message
-        ]
-    );
+    try {
+        $twilio->messages->create(
+            $userPhoneNumber, // Send to user's phone number
+            [
+                'from' => env('TWILIO_PHONE_NUMBER'), // Twilio phone number
+                'body' => $message
+            ]
+        );
+    } catch (\Exception $e) {
+        \Log::error("Failed to send SMS: {$e->getMessage()}");
+    }
 
-    $twilio->messages->create(
-        "whatsapp:{auth()->user()->phone_number}", // Ensure this is a WhatsApp number
-        [
-            'from' => env('TWILIO_WHATSAPP_NUMBER'), // Twilio WhatsApp number
-            'body' => $message
-        ]
-    );
+    // Prepare WhatsApp number
+    $whatsappNumber = "whatsapp:{$userPhoneNumber}"; // Format for WhatsApp
+
+    // Send WhatsApp message
+    try {
+        $twilio->messages->create(
+            $whatsappNumber, // Send to user's WhatsApp number
+            [
+                'from' => env('TWILIO_WHATSAPP_NUMBER'), // Twilio WhatsApp number
+                'body' => $message
+            ]
+        );
+    } catch (\Exception $e) {
+        \Log::error("Failed to send WhatsApp message: {$e->getMessage()}");
+    }
 }
 }
