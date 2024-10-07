@@ -34,6 +34,17 @@
                         </div>
 
                         <div class="mb-3">
+                            <label for="phone_number" class="form-label">{{ __('Phone Number (include country code)') }}</label>
+                            <input id="phone_number" type="text" class="form-control @error('phone_number') is-invalid @enderror" name="phone_number" value="{{ old('phone_number') }}" required autocomplete="phone_number">
+
+                            @error('phone_number')
+                                <div class="invalid-feedback">
+                                    <strong>{{ $message }}</strong>
+                                </div>
+                            @enderror
+                        </div>
+
+                        <div class="mb-3">
                             <label for="password" class="form-label">{{ __('Password') }}</label>
                             <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
 
