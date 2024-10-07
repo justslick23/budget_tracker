@@ -77,7 +77,6 @@ class HomeController extends Controller
     $recentExpenses = Expense::where('user_id', $userId)
         ->whereBetween('date', [$startDate, $endDate])
         ->orderBy('date', 'desc')
-        ->take(5)
         ->get()
         ->map(function ($expense) {
             $expense->type = 'Expense';
@@ -87,7 +86,6 @@ class HomeController extends Controller
     $recentIncome = Income::where('user_id', $userId)
         ->whereBetween('date', [$startDate, $endDate])
         ->orderBy('date', 'desc')
-        ->take(5)
         ->get()
         ->map(function ($income) {
             $income->type = 'Income';
@@ -104,7 +102,6 @@ class HomeController extends Controller
     $recentExpenses = Expense::where('user_id', $userId)
     ->whereBetween('date', [$startDate, $endDate])
     ->orderBy('date', 'desc')
-    ->take(5)
     ->get()
     ->map(function ($expense) {
         $expense->type = 'Expense';
