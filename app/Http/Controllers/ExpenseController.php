@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Expense;
 use App\Models\Category;
 use App\Models\Budget;
+use Twilio\Rest\Client; // Add this at the top for Twilio
 
 use Illuminate\Http\Request;
 use App\Notifications\OverBudgetNotification;
@@ -83,6 +84,7 @@ class ExpenseController extends Controller
 
     // Notify the user about the recorded expense
     auth()->user()->notify(new ExpenseRecorded($expense->amount, $expense->category));
+    $this->sendSmsNotification($expense);
 
     return redirect()->route('expenses.index')->with('success', 'Expense added successfully.');
 }
@@ -100,7 +102,7 @@ public function destroy($id)
             ->first();
         
         if ($budget) {
-            $budget->spent -= $expense->amount; // Subtract the expense from the spent amount
+            $budget->spent += $expense->amount; // Subtract the expense from the spent amount
             $budget->save(); // Save the updated budget
         }
 
@@ -109,5 +111,23 @@ public function destroy($id)
 
         return redirect()->route('expenses.index')->with('success', 'Expense deleted successfully.');
     }
-    // Add edit, update, and delete methods as needed
+    
+    // Method to send an SMS using Twilio
+protected function sendSmsNotification($expense)
+{
+    // Initialize Twilio Client
+    $twilio = new Client(env('TWILIO_SID'), env('TWILIO_AUTH_TOKEN'));
+
+    // Define the message content
+    $message = "An expense of {$expense->amount} has been recorded in the {$expense->category->name} category.";
+
+    // Send SMS
+    $twilio->messages->create(
+        auth()->user()->phone_number, // Send to user's phone number
+        [
+            'from' => env('TWILIO_PHONE_NUMBER'), // Twilio phone number
+            'body' => $message
+        ]
+    );
+}
 }
