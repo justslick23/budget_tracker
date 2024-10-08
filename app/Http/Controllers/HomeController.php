@@ -7,6 +7,9 @@ use App\Models\Expense;
 use App\Models\Income;
 use App\Models\Budget;
 use Carbon\Carbon;
+use Phpml\ModelManager; // Include this at the top if using PHP-ML
+use App\Services\OpenAIService; // Add this line
+
 class HomeController extends Controller
 {
     /**
@@ -14,10 +17,15 @@ class HomeController extends Controller
      *
      * @return void
      */
-    public function __construct()
+    protected $openAIService;
+
+    public function __construct(OpenAIService $openAIService)
     {
         $this->middleware('auth');
+        $this->openAIService = $openAIService; // Inject OpenAIService
     }
+
+    
 
     /**
      * Show the application dashboard.
@@ -25,114 +33,154 @@ class HomeController extends Controller
      * @return \Illuminate\Contracts\Support\Renderable
      */
     public function index()
+    {
+        $currentMonth = Carbon::now()->format('Y-m');
+        $currentMonthNumeric = Carbon::parse($currentMonth)->format('m'); 
+        $currentDate = now();
+        
+        $userId = auth()->id();
+        $startDate = $currentDate->copy()->subMonth()->day(31)->startOfDay();
+        $endDate = $currentDate->copy()->day(31)->endOfDay();
+
+        $totalIncome = Income::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('amount');
+
+        $totalExpenses = Expense::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('amount');
+
+        $monthlyBudget = Budget::where('user_id', $userId)
+            ->where('month', $currentMonthNumeric)
+            ->sum('amount');
+
+        $previousStartDate = $currentDate->copy()->subMonth()->day(26)->startOfDay();
+        $previousEndDate = $currentDate->copy()->subMonth()->day(25)->endOfDay();
+
+        $previousTotalIncome = Income::where('user_id', $userId)
+            ->whereBetween('date', [$previousStartDate, $previousEndDate])
+            ->sum('amount');
+
+        $previousTotalExpenses = Expense::where('user_id', $userId)
+            ->whereBetween('date', [$previousStartDate, $previousEndDate])
+            ->sum('amount');
+
+        $incomePercentageChange = $previousTotalIncome > 0 ? (($totalIncome - $previousTotalIncome) / $previousTotalIncome) * 100 : 0;
+        $expensesPercentageChange = $previousTotalExpenses > 0 ? (($totalExpenses - $previousTotalExpenses) / $previousTotalExpenses) * 100 : 0;
+
+        $recentExpenses = Expense::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(function ($expense) {
+                $expense->type = 'Expense';
+                return $expense;
+            });
+
+        $recentIncome = Income::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(function ($income) {
+                $income->type = 'Income';
+                return $income;
+            });
+
+        $recentTransactions = $recentExpenses->merge($recentIncome)->sortByDesc('date');
+        $netSavings = $monthlyBudget - $totalExpenses;
+
+        $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) {
+            return [
+                'name' => $group->first()->category->name,
+                'amount' => $group->sum('amount') 
+            ]; 
+        });
+
+        $remainingBudget = $monthlyBudget - $totalExpenses;
+
+        // Get predictions from OpenAIService
+ // Step 1: Fetch historical expenses for the logged-in user
+ $historicalExpenses = Expense::where('user_id', $userId)
+ ->orderBy('date', 'asc')
+ ->get();
+
+// Prepare the expenses data for prediction
+$expensesArray = $historicalExpenses->map(function ($expense) {
+ return [
+     'date' => $expense->date->format('Y-m-d'), // Format date as needed
+     'amount' => $expense->amount,
+     // Add any other relevant fields here if needed
+ ];
+})->toArray();
+
+// Step 2: Use the OpenAIService to predict expenses
+$predictions = $this->openAIService->predictExpenses($expensesArray);
+        // Prepare data for the chart
+        $labels = $groupedExpenses->pluck('name'); 
+        $data = $groupedExpenses->pluck('amount'); 
+
+        return view('dashboard', compact(
+            'totalIncome',
+            'totalExpenses',
+            'netSavings',
+            'monthlyBudget', 
+            'incomePercentageChange', 
+            'expensesPercentageChange', 
+            'recentTransactions', 
+            'labels', 
+            'data', 
+            'remainingBudget',
+            'predictions' // Include predictions
+        ));
+    }
+/**
+ * Predict future expenses based on historical data.
+ *
+ * @param int $userId
+ * @return array
+ */
+private function predictExpenses($userId)
 {
-    // Get the current month and date
-    $currentMonth = Carbon::now()->format('Y-m');
-    $currentMonthNumeric = Carbon::parse($currentMonth)->format('m'); // e.g., '10'
+    // Fetch historical expenses for the logged-in user
+    $historicalExpenses = Expense::where('user_id', $userId)
+        ->orderBy('date', 'asc')
+        ->get(['amount', 'date']);
 
-    $currentDate = now();
-    
-    // Get the ID of the currently logged-in user
-    $userId = auth()->id();
+    // Prepare data for prediction
+    $samples = [];
+    foreach ($historicalExpenses as $expense) {
+        // Using the day of the year as a feature and the amount as a target
+        $samples[] = [
+            Carbon::parse($expense->date)->dayOfYear, // Day of the year (1-365)
+            $expense->amount, // Historical expense amount
+        ];
+    }
 
-    // Calculate the start and end dates for the desired range
-    $startDate = $currentDate->copy()->subMonth()->day(31)->startOfDay(); // From the 26th of the previous month
-    $endDate = $currentDate->copy()->day(31)->endOfDay(); // To the 25th of the current month
+    // Load the trained machine learning model
+    $modelManager = new ModelManager();
+    $model = $modelManager->restoreFromFile('model/lr_model.phpml'); // Adjust the path as necessary
 
-    // Get total income within the specified date range for the logged-in user
-    $totalIncome = Income::where('user_id', $userId)
-        ->whereBetween('date', [$startDate, $endDate])
-        ->sum('amount');
+    // Prepare an array to hold predictions for the next 30 days
+    $predictions = [];
 
-    // Get total expenses within the same date range for the logged-in user
-    $totalExpenses = Expense::where('user_id', $userId)
-        ->whereBetween('date', [$startDate, $endDate])
-        ->sum('amount');
+    // Get the last day of the year based on historical data
+    $lastDayOfYear = max(array_column($samples, 0)); // Find the maximum day of the year from historical data
 
-    // Calculate net savings
+    // Make predictions (e.g., for the next 30 days)
+    for ($i = 1; $i <= 30; $i++) {
+        // Increment the day of the year based on the last recorded day
+        $predictedDay = $lastDayOfYear + $i;
+        
+        // Predict future expense for the predicted day
+        $predictedAmount = $model->predict([[$predictedDay, 0]]); // Adjust input as necessary (e.g., 0 for no previous expense)
 
-    // Get monthly budget for the current month for the logged-in user
-    $monthlyBudget = Budget::where('user_id', $userId)
-        ->where('month', $currentMonthNumeric)
-        ->sum('amount');
+        $predictions[] = [
+            'day' => $predictedDay,
+            'amount' => $predictedAmount[0], // Assuming your model returns an array
+        ];
+    }
 
-
-    // Calculate total income and expenses for the previous month (from the 26th to the 25th)
-    $previousStartDate = $currentDate->copy()->subMonth()->day(26)->startOfDay();
-    $previousEndDate = $currentDate->copy()->subMonth()->day(25)->endOfDay();
-
-    $previousTotalIncome = Income::where('user_id', $userId)
-        ->whereBetween('date', [$previousStartDate, $previousEndDate])
-        ->sum('amount');
-
-    $previousTotalExpenses = Expense::where('user_id', $userId)
-        ->whereBetween('date', [$previousStartDate, $previousEndDate])
-        ->sum('amount');
-
-    // Calculate percentage difference from last month
-    $incomePercentageChange = $previousTotalIncome > 0 ? (($totalIncome - $previousTotalIncome) / $previousTotalIncome) * 100 : 0;
-    $expensesPercentageChange = $previousTotalExpenses > 0 ? (($totalExpenses - $previousTotalExpenses) / $previousTotalExpenses) * 100 : 0;
-
-    // Get recent transactions (income and expenses) for the logged-in user
-    $recentExpenses = Expense::where('user_id', $userId)
-        ->whereBetween('date', [$startDate, $endDate])
-        ->orderBy('date', 'desc')
-        ->get()
-        ->map(function ($expense) {
-            $expense->type = 'Expense';
-            return $expense;
-        });
-
-    $recentIncome = Income::where('user_id', $userId)
-        ->whereBetween('date', [$startDate, $endDate])
-        ->orderBy('date', 'desc')
-        ->get()
-        ->map(function ($income) {
-            $income->type = 'Income';
-            return $income;
-        });
-
-    // Merge recent transactions and sort them by date
-    $recentTransactions = $recentExpenses->merge($recentIncome)->sortByDesc('date');
-
-    // Group recent expenses by category and sum amounts
-    $netSavings = $monthlyBudget - $totalExpenses;
-
-
-    $recentExpenses = Expense::where('user_id', $userId)
-    ->whereBetween('date', [$startDate, $endDate])
-    ->orderBy('date', 'desc')
-    ->get()
-    ->map(function ($expense) {
-        $expense->type = 'Expense';
-        return $expense;
-    });
-
-// Group expenses by category and sum amounts
-$groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) {
-    return [
-        'name' => $group->first()->category->name, // Assuming there's a relationship named 'category'
-        'amount' => $group->sum('amount') // Sum amounts for each category
-    ]; 
-});
-
-
-$remainingBudget = $monthlyBudget - $totalExpenses;
-
-    // Prepare data for the chart
-    $labels = $groupedExpenses->pluck('name'); // Get category names
-    $data = $groupedExpenses->pluck('amount'); // Get corresponding summed amounts
-    return view('dashboard', compact(
-        'totalIncome',
-        'totalExpenses',
-        'netSavings',
-        'monthlyBudget', // Include monthly budget
-        'incomePercentageChange', // Include income percentage change
-        'expensesPercentageChange', // Include expenses percentage change
-        'recentTransactions', 
-        'labels', 
-        'data', 'remainingBudget'
-    ));
+    return $predictions; // Return the predictions for the next 30 days
 }
 
 public function filter(Request $request)

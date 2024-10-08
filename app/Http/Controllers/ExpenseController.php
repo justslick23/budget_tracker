@@ -6,15 +6,22 @@ use App\Models\Expense;
 use App\Models\Category;
 use App\Models\Budget;
 use Twilio\Rest\Client; // Add this at the top for Twilio
-
 use Illuminate\Http\Request;
 use App\Notifications\OverBudgetNotification;
 use Notification;
 use App\Notifications\ExpenseRecorded;
-
+use App\Services\OpenAIService;
+use Carbon\Carbon;
 
 class ExpenseController extends Controller
 {
+    protected $openAIService;
+
+    public function __construct(OpenAIService $openAIService)
+    {
+        $this->openAIService = $openAIService;
+    }
+
     public function index()
     {
         $userId = auth()->id(); // Get the currently authenticated user's ID
@@ -22,7 +29,6 @@ class ExpenseController extends Controller
     
         return view('expenses.index', compact('expenses'));
     }
-    
 
     public function create()
     {
@@ -30,66 +36,54 @@ class ExpenseController extends Controller
 
         return view('expenses.create', compact('categories'));
     }
+
     public function store(Request $request)
-{
-    $request->validate([
-        'amount' => 'required|numeric',
-        'category_id' => 'required|exists:categories,id',
-        'description' => 'nullable|string',
-        'date' => 'required|date',
-    ]);
+    {
+        $request->validate([
+            'amount' => 'required|numeric',
+            'category_id' => 'required|exists:categories,id',
+            'description' => 'nullable|string',
+            'date' => 'required|date',
+        ]);
+    
+        // Add user_id to the request data
+        $requestData = $request->all();
+        $requestData['user_id'] = auth()->id(); // Set the user_id from the authenticated user
+    
+        // Create the expense
+        $expense = Expense::create($requestData);
 
-    // Add user_id to the request data
-    $requestData = $request->all();
-    $requestData['user_id'] = auth()->id(); // Set the user_id from the authenticated user
+    // Get historical expenses for the user
+    $historicalExpenses = Expense::where('user_id', auth()->id())
+        ->orderBy('date', 'asc')
+        ->get(); // Fetch historical expenses
 
-    // Create the expense
-    $expense = Expense::create($requestData);
+        $expensesArray = $historicalExpenses->map(function ($expense) {
+            return [
+                'date' => $expense->date->format('Y-m-d'), // Format date as needed
+                'amount' => $expense->amount,
+                'description' => $expense->description,
+                // Add any other relevant fields here
+            ];
+        })->toArray();
 
-    // Get the date of the expense
-    $expenseDate = \Carbon\Carbon::parse($expense->date);
-    $month = $expenseDate->month;
-    $year = $expenseDate->year;
-
-    // Determine the correct budget month
-    if ($expenseDate->day >= 28) {
-        // If the date is from 28th to end of the month, adjust to next month
-        $month = ($month % 12) + 1; // Increment month
-        $year += ($month === 1) ? 1 : 0; // Increment year if we rolled over to January
-    }
-
-    // Update the budget for the determined month
-    $budget = Budget::where('user_id', auth()->id())
-        ->where('month', $month)
-        ->where('category_id', $request->category_id)
-        ->where('year', $year)
-        ->first();
-
-    if ($budget) {
-        // Calculate the total expenses for the specific budget month
-        $totalExpenses = Expense::where('user_id', auth()->id())
-            ->where('category_id', $request->category_id)
-            ->whereMonth('date', $month)
-            ->whereYear('date', $year) // Ensure the year is also considered
-            ->sum('amount');
-
-            $budget->spent += $expense->amount; // Add the new expense to the spent amount
-
-
-        // Check if the total expenses exceed the budget
-        if ($totalExpenses > $budget->amount) {
-            Notification::send(auth()->user(), new OverBudgetNotification($expense, $budget));
-        }
+       
+    // Call the method to predict expenses using OpenAI
+    try {
+        $predictedExpenses = $this->openAIService->predictExpenses($expensesArray ); // Pass the historical expenses
+    } catch (\Exception $e) {
+        \Log::error("Prediction failed: " . $e->getMessage());
+        return redirect()->route('expenses.index')->with('error', 'Failed to predict expenses.');
     }
 
     // Notify the user about the recorded expense
     auth()->user()->notify(new ExpenseRecorded($expense->amount, $expense->category));
     $this->sendSmsNotification($expense);
 
-    return redirect()->route('expenses.index')->with('success', 'Expense added successfully.');
-}
-
-public function destroy($id)
+   
+    }
+    
+    public function destroy($id)
     {
         // Find the expense by ID
         $expense = Expense::where('user_id', auth()->id())->findOrFail($id);
@@ -102,7 +96,7 @@ public function destroy($id)
             ->first();
         
         if ($budget) {
-            $budget->spent += $expense->amount; // Subtract the expense from the spent amount
+            $budget->spent -= $expense->amount; // Subtract the expense from the spent amount
             $budget->save(); // Save the updated budget
         }
 
@@ -111,47 +105,46 @@ public function destroy($id)
 
         return redirect()->route('expenses.index')->with('success', 'Expense deleted successfully.');
     }
-    
 
     protected function sendSmsNotification($expense)
-{
-    // Initialize Twilio Client
-    $twilio = new Client(env('TWILIO_SID'), env('TWILIO_AUTH_TOKEN'));
+    {
+        // Initialize Twilio Client
+        $twilio = new Client(env('TWILIO_SID'), env('TWILIO_AUTH_TOKEN'));
 
-    // Format the amount as currency
-    $formattedAmount = number_format($expense->amount, 2); // Format to 2 decimal places
-    $message = "An expense of M {$formattedAmount} ({$expense->description}) has been recorded in the {$expense->category->name} category.";
+        // Format the amount as currency
+        $formattedAmount = number_format($expense->amount, 2); // Format to 2 decimal places
+        $message = "An expense of M {$formattedAmount} ({$expense->description}) has been recorded in the {$expense->category->name} category.";
 
-    // Get the user's phone number directly from the database
-    $userPhoneNumber = auth()->user()->phone_number; // Already in correct format
+        // Get the user's phone number directly from the database
+        $userPhoneNumber = auth()->user()->phone_number; // Already in correct format
 
-    // Send SMS
-    try {
-        $twilio->messages->create(
-            $userPhoneNumber, // Send to user's phone number
-            [
-                'from' => env('TWILIO_PHONE_NUMBER'), // Twilio phone number
-                'body' => $message
-            ]
-        );
-    } catch (\Exception $e) {
-        \Log::error("Failed to send SMS: {$e->getMessage()}");
+        // Send SMS
+        try {
+            $twilio->messages->create(
+                $userPhoneNumber, // Send to user's phone number
+                [
+                    'from' => env('TWILIO_PHONE_NUMBER'), // Twilio phone number
+                    'body' => $message
+                ]
+            );
+        } catch (\Exception $e) {
+            \Log::error("Failed to send SMS: {$e->getMessage()}");
+        }
+
+        // Prepare WhatsApp number
+        $whatsappNumber = "whatsapp:{$userPhoneNumber}"; // Format for WhatsApp
+
+        // Send WhatsApp message
+        try {
+            $twilio->messages->create(
+                $whatsappNumber, // Send to user's WhatsApp number
+                [
+                    'from' => env('TWILIO_WHATSAPP_NUMBER'), // Twilio WhatsApp number
+                    'body' => $message
+                ]
+            );
+        } catch (\Exception $e) {
+            \Log::error("Failed to send WhatsApp message: {$e->getMessage()}");
+        }
     }
-
-    // Prepare WhatsApp number
-    $whatsappNumber = "whatsapp:{$userPhoneNumber}"; // Format for WhatsApp
-
-    // Send WhatsApp message
-    try {
-        $twilio->messages->create(
-            $whatsappNumber, // Send to user's WhatsApp number
-            [
-                'from' => env('TWILIO_WHATSAPP_NUMBER'), // Twilio WhatsApp number
-                'body' => $message
-            ]
-        );
-    } catch (\Exception $e) {
-        \Log::error("Failed to send WhatsApp message: {$e->getMessage()}");
-    }
-}
 }

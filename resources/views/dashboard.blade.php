@@ -93,6 +93,32 @@
         </div>
     </div>
 
+    <!-- Predictions Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Predicted Expenses for Next 30 Days</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                    @if($predictions && count($predictions) > 0)
+    @foreach($predictions as $day => $predictedAmount)
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+            Day {{ intval($day) + 1 }}:  <!-- Ensure $day is treated as an integer -->
+            <span class="badge badge-info">M{{ number_format((float)$predictedAmount, 2) }}</span>
+            </li>
+    @endforeach
+@else
+    <li class="list-group-item">No predictions available.</li>
+@endif
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Charts Section -->
     <div class="row">
         <div class="col-lg-7 mb-4">
@@ -167,6 +193,7 @@
     </div>
 </div>
 @endsection
+
 @section('scripts')
 <script>
     // Expense Chart
