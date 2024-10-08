@@ -115,18 +115,21 @@ $expensesArray = $historicalExpenses->map(function ($expense) {
  ];
 })->toArray();
 
-
 // Step 2: Use the OpenAIService to predict expenses
-$predictionsString = $this->openAIService->predictExpenses($expensesArray)['predicted_expenses'] ?? 'No predictions available.';
+$predictionsArray = $this->openAIService->predictExpenses($expensesArray)['predicted_expenses'] ?? 'No predictions available.';
 
-// Parse the predictions into a structured array
-$predictionsArray = [];
-if ($predictionsString !== 'No predictions available.') {
-    preg_match_all('/([A-Za-z]+):\s+-?\s*([M\d,.]+)/', $predictionsString, $matches);
-    foreach ($matches[1] as $index => $category) {
-        $predictionsArray[$category] = str_replace('M', '', $matches[2][$index]); // Remove 'M' and keep the numeric value
+// Check if predictionsArray is valid and in array format
+if (is_array($predictionsArray)) {
+    // Loop through and process the predictions
+    foreach ($predictionsArray as $category => $amount) {
+        // Ensure the amount is properly formatted (remove 'M' if present and convert to a float)
+        $predictionsArray[$category] = floatval(str_replace(['M', ','], '', $amount));
     }
-}        // Prepare data for the chart
+} else {
+    // Handle cases where there are no predictions available
+    $predictionsArray = [];
+}
+
         $labels = $groupedExpenses->pluck('name'); 
         $data = $groupedExpenses->pluck('amount'); 
 
