@@ -19,11 +19,11 @@ class OpenAIService
         // Prepare the formatted string of historical expenses for the prompt
         $formattedData = '';
         foreach ($data as $expense) {
-            $formattedData .= "On {$expense['date']}, I spent M{$expense['amount']} on {$expense['description']} in the {$expense['category']} category.\n";
+            $formattedData .= "On {$expense['date']}, I spent M{$expense['amount']} in the {$expense['category']} category.\n";
         }
 
         // Create the prompt for the model
-        $prompt = "Based on these historical expenses, predict future expenses:\n" . $formattedData;
+        $prompt = "Please provide a detailed prediction of my expenses for the next month, broken down by category. Here are my past expenses:\n" . $formattedData;
 
         $response = $this->client->chat()->create([
             'model' => 'gpt-3.5-turbo',  // or 'gpt-3.5-turbo'
@@ -33,14 +33,22 @@ class OpenAIService
                     'content' => $prompt,
                 ],
             ],
+            'temperature' => 0.2, // Adjust this value
+
         ]);
 
         // Log the entire response for debugging
         \Log::info('OpenAI Response: ', (array)$response);
 
         // Check for predictions
+        
         if (isset($response->choices) && count($response->choices) > 0) {
-            return json_decode($response->choices[0]->message->content, true);
+            $content = $response->choices[0]->message->content ?? 'No content available';
+
+            return [
+                'predicted_expenses' => $content,
+            ];
+
         } else {
             return [
                 'error' => 'No predictions available.',

@@ -93,31 +93,41 @@
         </div>
     </div>
 
-    <!-- Predictions Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Predicted Expenses for Next 30 Days</h6>
-                </div>
-                <div class="card-body">
-                    <ul class="list-group">
-                    @if($predictions && count($predictions) > 0)
-    @foreach($predictions as $day => $predictedAmount)
-        <li class="list-group-item d-flex justify-content-between align-items-center">
-            Day {{ intval($day) + 1 }}:  <!-- Ensure $day is treated as an integer -->
-            <span class="badge badge-info">M{{ number_format((float)$predictedAmount, 2) }}</span>
-            </li>
-    @endforeach
-@else
-    <li class="list-group-item">No predictions available.</li>
-@endif
-
-                    </ul>
-                </div>
+   <!-- Predictions Section -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Predicted Expenses for Next Month</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Predicted Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if(!empty($predictionsArray))
+                            @foreach($predictionsArray as $category => $amount)
+                                <tr>
+                                    <td>{{ $category }}</td>
+                                    <td>M{{ number_format((float)$amount, 2) }}</td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td colspan="2">No predictions available.</td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
+</div>
+
 
     <!-- Charts Section -->
     <div class="row">
@@ -153,38 +163,38 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                    <table class="table table-hover" id="transactionsTable">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>Description</th>
-                                <th>Transaction Type</th>
-                                <th>Amount</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($recentTransactions as $transaction)
-                            <tr>
-                                <td>{{ $transaction->description ?? $transaction->source }}</td>
-                                <td>{{ $transaction->type }}</td>
-                                <td>
-                                    @if ($transaction->type == 'Expense')
-                                    <span class="text-danger">
-                                        M{{ number_format(abs($transaction->amount), 2) }} 
-                                        <i class="fas fa-arrow-down"></i>
-                                    </span>
-                                    @else
-                                    <span class="text-success">
-                                        M{{ number_format($transaction->amount, 2) }} 
-                                        <i class="fas fa-arrow-up"></i>
-                                    </span>
-                                    @endif
-                                </td>
-                                <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+                        <table class="table table-hover" id="transactionsTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Transaction Type</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($recentTransactions as $transaction)
+                                    <tr>
+                                        <td>{{ $transaction->description ?? $transaction->source }}</td>
+                                        <td>{{ $transaction->type }}</td>
+                                        <td>
+                                            @if ($transaction->type == 'Expense')
+                                                <span class="text-danger">
+                                                    M{{ number_format(abs($transaction->amount), 2) }} 
+                                                    <i class="fas fa-arrow-down"></i>
+                                                </span>
+                                            @else
+                                                <span class="text-success">
+                                                    M{{ number_format($transaction->amount, 2) }} 
+                                                    <i class="fas fa-arrow-up"></i>
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                     
                 </div>
