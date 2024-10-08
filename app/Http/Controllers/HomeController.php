@@ -109,13 +109,17 @@ $expensesArray = $historicalExpenses->map(function ($expense) {
  return [
      'date' => $expense->date->format('Y-m-d'), // Format date as needed
      'amount' => $expense->amount,
+     'category' =>$expense->category->name,
+     'description' =>$expense->description,
      // Add any other relevant fields here if needed
  ];
 })->toArray();
 
+
 // Step 2: Use the OpenAIService to predict expenses
 $predictions = $this->openAIService->predictExpenses($expensesArray);
         // Prepare data for the chart
+
         $labels = $groupedExpenses->pluck('name'); 
         $data = $groupedExpenses->pluck('amount'); 
 
