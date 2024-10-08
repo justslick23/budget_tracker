@@ -98,31 +98,30 @@
     <div class="col-12">
         <div class="card shadow">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Predicted Expenses for Next Month</h6>
+                <h6 class="m-0 font-weight-bold text-primary">Predicted Budget and Expenses for Next Month</h6>
             </div>
             <div class="card-body">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Category</th>
-                            <th>Predicted Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if(!empty($predictionsArray))
-                            @foreach($predictionsArray as $category => $amount)
-                                <tr>
-                                    <td>{{ $category }}</td>
-                                    <td>M{{ number_format((float)$amount, 2) }}</td>
-                                </tr>
-                            @endforeach
-                        @else
+                @if(!empty($predictionsArray))
+                    <table class="table table-bordered">
+                        <thead>
                             <tr>
-                                <td colspan="2">No predictions available.</td>
+                                <th>Category</th>
+                                <th>Predicted Amount (M)</th>
                             </tr>
-                        @endif
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach($predictionsArray as $category => $amount)
+                            <tr>
+                                <td>{{ ucfirst($category) }}</td>
+                                <td>M{{ number_format((float)$amount, 2) }}</td>
+                            </tr>
+                            @endforeach
+                          
+                        </tbody>
+                    </table>
+                @else
+                    <p>No predictions available.</p>
+                @endif
             </div>
         </div>
     </div>

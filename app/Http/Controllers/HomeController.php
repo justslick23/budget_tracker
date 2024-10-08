@@ -41,33 +41,33 @@ class HomeController extends Controller
         $userId = auth()->id();
         $startDate = $currentDate->copy()->subMonth()->day(31)->startOfDay();
         $endDate = $currentDate->copy()->day(31)->endOfDay();
-
+    
         $totalIncome = Income::where('user_id', $userId)
             ->whereBetween('date', [$startDate, $endDate])
             ->sum('amount');
-
+    
         $totalExpenses = Expense::where('user_id', $userId)
             ->whereBetween('date', [$startDate, $endDate])
             ->sum('amount');
-
+    
         $monthlyBudget = Budget::where('user_id', $userId)
             ->where('month', $currentMonthNumeric)
             ->sum('amount');
-
+    
         $previousStartDate = $currentDate->copy()->subMonth()->day(26)->startOfDay();
         $previousEndDate = $currentDate->copy()->subMonth()->day(25)->endOfDay();
-
+    
         $previousTotalIncome = Income::where('user_id', $userId)
             ->whereBetween('date', [$previousStartDate, $previousEndDate])
             ->sum('amount');
-
+    
         $previousTotalExpenses = Expense::where('user_id', $userId)
             ->whereBetween('date', [$previousStartDate, $previousEndDate])
             ->sum('amount');
-
+    
         $incomePercentageChange = $previousTotalIncome > 0 ? (($totalIncome - $previousTotalIncome) / $previousTotalIncome) * 100 : 0;
         $expensesPercentageChange = $previousTotalExpenses > 0 ? (($totalExpenses - $previousTotalExpenses) / $previousTotalExpenses) * 100 : 0;
-
+    
         $recentExpenses = Expense::where('user_id', $userId)
             ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date', 'desc')
@@ -76,7 +76,7 @@ class HomeController extends Controller
                 $expense->type = 'Expense';
                 return $expense;
             });
-
+    
         $recentIncome = Income::where('user_id', $userId)
             ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date', 'desc')
@@ -85,54 +85,50 @@ class HomeController extends Controller
                 $income->type = 'Income';
                 return $income;
             });
-
+    
         $recentTransactions = $recentExpenses->merge($recentIncome)->sortByDesc('date');
         $netSavings = $monthlyBudget - $totalExpenses;
-
+    
         $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) {
             return [
                 'name' => $group->first()->category->name,
                 'amount' => $group->sum('amount') 
             ]; 
         });
-
+    
         $remainingBudget = $monthlyBudget - $totalExpenses;
+    
+        // Step 1: Fetch historical expenses for the logged-in user
+        $historicalExpenses = Expense::where('user_id', $userId)
+            ->orderBy('date', 'asc')
+            ->get();
+    
+        // Prepare the expenses data for prediction
+        $expensesArray = $historicalExpenses->map(function ($expense) {
+            return [
+                'date' => $expense->date->format('Y-m-d'), // Format date as needed
+                'amount' => $expense->amount,
+                'category' => $expense->category->name,
+                'description' => $expense->description,
+                // Add any other relevant fields here if needed
+            ];
+        })->toArray();
+    
+        // Step 2: Use the OpenAIService to predict expenses
+        $predictionsResponse = $this->openAIService->predictExpenses($expensesArray, $monthlyBudget);
 
-        // Get predictions from OpenAIService
- // Step 1: Fetch historical expenses for the logged-in user
- $historicalExpenses = Expense::where('user_id', $userId)
- ->orderBy('date', 'asc')
- ->get();
-
-// Prepare the expenses data for prediction
-$expensesArray = $historicalExpenses->map(function ($expense) {
- return [
-     'date' => $expense->date->format('Y-m-d'), // Format date as needed
-     'amount' => $expense->amount,
-     'category' =>$expense->category->name,
-     'description' =>$expense->description,
-     // Add any other relevant fields here if needed
- ];
-})->toArray();
-
-// Step 2: Use the OpenAIService to predict expenses
-$predictionsArray = $this->openAIService->predictExpenses($expensesArray)['predicted_expenses'] ?? 'No predictions available.';
-
-// Check if predictionsArray is valid and in array format
-if (is_array($predictionsArray)) {
-    // Loop through and process the predictions
-    foreach ($predictionsArray as $category => $amount) {
-        // Ensure the amount is properly formatted (remove 'M' if present and convert to a float)
-        $predictionsArray[$category] = floatval(str_replace(['M', ','], '', $amount));
-    }
-} else {
-    // Handle cases where there are no predictions available
-    $predictionsArray = [];
-}
-
+        // Log the response for debugging
+        \Log::info('Predictions Response: ', $predictionsResponse);
+    
+        // Extract predictions and additional info
+        $predictionsArray = $predictionsResponse['predicted_expenses'] ?? [];
+        $totalPredictedExpenses = $predictionsResponse['total_predicted_expenses'] ?? 0;
+        $projectedSavings = $predictionsResponse['projected_savings'] ?? 0;
+    
+    
         $labels = $groupedExpenses->pluck('name'); 
         $data = $groupedExpenses->pluck('amount'); 
-
+    
         return view('dashboard', compact(
             'totalIncome',
             'totalExpenses',
@@ -144,9 +140,12 @@ if (is_array($predictionsArray)) {
             'labels', 
             'data', 
             'remainingBudget',
-            'predictionsArray' // Include predictions
+            'predictionsArray', 'predictionsArray',
+            'totalPredictedExpenses',
+            'projectedSavings' // Include predictions
         ));
     }
+    
 /**
  * Predict future expenses based on historical data.
  *

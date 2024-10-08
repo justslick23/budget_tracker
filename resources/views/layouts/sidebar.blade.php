@@ -1,8 +1,10 @@
 <!-- Sidebar -->
 <div class="sidebar" data-background-color="dark">
-    <div class="sidebar-logo">
+<div class="sidebar-logo">
         <a href="{{ route('dashboard') }}" class="logo">
-            <img src="{{ asset('assets/img/logo.svg') }}" alt="navbar brand" class="navbar-brand" height="20" />
+            <h4 class="navbar-brand text-white" style="margin: 0;">
+                <i class="fas fa-wallet"></i> Budget Tracker
+            </h4>
         </a>
         <div class="nav-toggle">
             <button class="btn btn-toggle toggle-sidebar">
@@ -132,7 +134,7 @@
 <!-- jQuery Scrollbar -->
 <script src="{{ asset('assets/js/plugin/jquery-scrollbar/jquery.scrollbar.min.js') }}"></script>
 
-// Custom Script for Toggle and Logout Confirmation
+<!-- Custom Script for Toggle and Logout Confirmation -->
 <script>
     $(document).ready(function() {
         // Toggle sidebar
@@ -141,9 +143,11 @@
         });
 
         // Handle collapse functionality for submenus
-        $('.nav-item a[data-bs-toggle="collapse"]').on('click', function() {
+        $('.nav-item a[data-bs-toggle="collapse"]').on('click', function(e) {
+            e.preventDefault(); // Prevent default anchor behavior
             var target = $(this).attr('href');
             $(target).collapse('toggle');
+            $(target).siblings('.collapse.show').collapse('hide'); // Close other open menus
         });
 
         // Show sidebar in mobile view
@@ -161,10 +165,9 @@
 </script>
 
 
-<!-- Custom CSS for Sidebar -->
 <style>
     .sidebar {
-        transition: width 0.3s;
+        transition: width 0.3s ease; /* Add easing for smooth transition */
         overflow: hidden; /* Prevent overflow */
     }
 
@@ -186,8 +189,9 @@
             position: fixed; /* Fix sidebar in place on mobile */
             left: -250px; /* Hide it offscreen */
             width: 250px; /* Width of the sidebar when visible */
-            transition: left 0.3s; /* Smooth transition */
+            transition: left 0.3s ease; /* Smooth transition */
         }
+
         .sidebar.active {
             left: 0; /* Show sidebar */
         }
