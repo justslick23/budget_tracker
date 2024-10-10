@@ -68,13 +68,7 @@ class ExpenseController extends Controller
         })->toArray();
 
        
-    // Call the method to predict expenses using OpenAI
-    try {
-        $predictedExpenses = $this->openAIService->predictExpenses($expensesArray ); // Pass the historical expenses
-    } catch (\Exception $e) {
-        \Log::error("Prediction failed: " . $e->getMessage());
-        return redirect()->route('expenses.index')->with('error', 'Failed to predict expenses.');
-    }
+    
 
     // Notify the user about the recorded expense
     auth()->user()->notify(new ExpenseRecorded($expense->amount, $expense->category));

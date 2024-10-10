@@ -480,6 +480,28 @@ body {
   flex: 1;
   overflow-y: auto; }
 
+  /* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar {
+      position: fixed; /* Fix sidebar in place on mobile */
+      left: -250px; /* Hide it offscreen */
+      width: 250px; /* Width of the sidebar when visible */
+      transition: left 0.3s; /* Smooth transition */
+  }
+
+  .sidebar.active {
+      left: 0; /* Show sidebar */
+  }
+
+  .main-panel {
+      transition: margin-left 0.3s; /* Smooth transition for main panel */
+  }
+
+  .main-panel.active {
+      margin-left: 250px; /* Shift the main content to make space for sidebar */
+  }
+}
+
 @media (min-width: 1200.5px) {
   .page-sidebar {
     transform: translateZ(0);
