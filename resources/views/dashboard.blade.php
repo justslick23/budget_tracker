@@ -26,7 +26,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col-auto">
-                            <i class="fas fa-dollar-sign fa-2x text-success"></i>
+                            <i class="ti-money fa-2x text-success"></i>
                         </div>
                         <div class="col">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Total Income</div>
@@ -44,7 +44,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col-auto">
-                            <i class="fas fa-credit-card fa-2x text-danger"></i>
+                            <i class="ti-credit-card fa-2x text-danger"></i>
                         </div>
                         <div class="col">
                             <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Total Expenses</div>
@@ -62,7 +62,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col-auto">
-                            <i class="fas fa-calendar-alt fa-2x text-info"></i>
+                            <i class="ti-calendar fa-2x text-info"></i>
                         </div>
                         <div class="col">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Monthly Budget</div>
@@ -80,7 +80,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col-auto">
-                            <i class="fas fa-money-bill-wave fa-2x text-purple"></i>
+                            <i class="ti-wallet fa-2x text-purple"></i>
                         </div>
                         <div class="col">
                             <div class="text-xs font-weight-bold text-purple text-uppercase mb-1">Remaining Budget</div>
@@ -92,41 +92,6 @@
             </div>
         </div>
     </div>
-
-   <!-- Predictions Section -->
-<div class="row mb-4">
-    <div class="col-12">
-        <div class="card shadow">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Predicted Budget and Expenses for Next Month</h6>
-            </div>
-            <div class="card-body">
-                @if(!empty($predictionsArray))
-                    <table class="table table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Category</th>
-                                <th>Predicted Amount (M)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($predictionsArray as $category => $amount)
-                            <tr>
-                                <td>{{ ucfirst($category) }}</td>
-                                <td>M{{ number_format((float)$amount, 2) }}</td>
-                            </tr>
-                            @endforeach
-                          
-                        </tbody>
-                    </table>
-                @else
-                    <p>No predictions available.</p>
-                @endif
-            </div>
-        </div>
-    </div>
-</div>
-
 
     <!-- Charts Section -->
     <div class="row">
@@ -180,12 +145,12 @@
                                             @if ($transaction->type == 'Expense')
                                                 <span class="text-danger">
                                                     M{{ number_format(abs($transaction->amount), 2) }} 
-                                                    <i class="fas fa-arrow-down"></i>
+                                                    <i class="ti-arrow-down"></i>
                                                 </span>
                                             @else
                                                 <span class="text-success">
                                                     M{{ number_format($transaction->amount, 2) }} 
-                                                    <i class="fas fa-arrow-up"></i>
+                                                    <i class="ti-arrow-up"></i>
                                                 </span>
                                             @endif
                                         </td>
@@ -195,7 +160,6 @@
                             </tbody>
                         </table>
                     </div>
-                    
                 </div>
             </div>
         </div>
@@ -234,40 +198,16 @@
     const budgetStatusChart = new Chart(ctxBudget, {
         type: 'pie',
         data: {
-            labels: ['Spent', 'Remaining'],
+            labels: ['Remaining', 'Spent'],
             datasets: [{
-                label: 'Budget Status',
-                data: [ {{ $totalExpenses }}, {{ $monthlyBudget - $totalExpenses }}],
-                backgroundColor: ['#4fd1c5', '#f6ad55'],
-                borderColor: ['#4fd1c5', '#f6ad55'],
-                borderWidth: 1
+                data: [{{ $remainingBudget }}, {{ $totalExpenses }}],
+                backgroundColor: ['#36A2EB', '#FF6384'],
+                hoverOffset: 4
             }]
         },
         options: {
-            responsive: true,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(tooltipItem) {
-                            return tooltipItem.label + ': ' + ' M' + tooltipItem.raw;
-                        }
-                    }
-                }
-            }
+            responsive: true
         }
-    });
-
-    // DataTables Initialization
-    $(document).ready(function() {
-        $('#transactionsTable').DataTable({
-            paging: true,
-            searching: true,
-            ordering: true,
-            order: [[3, "desc"]],
-            language: {
-                emptyTable: "No transactions available"
-            }
-        });
     });
 </script>
 @endsection

@@ -74,7 +74,8 @@ class ExpenseController extends Controller
     auth()->user()->notify(new ExpenseRecorded($expense->amount, $expense->category));
     $this->sendSmsNotification($expense);
 
-   
+    return redirect()->route('expenses.index')->with('success', 'Expense added successfully.');
+
     }
     
     public function destroy($id)

@@ -114,17 +114,7 @@ class HomeController extends Controller
             ];
         })->toArray();
     
-        // Step 2: Use the OpenAIService to predict expenses
-        $predictionsResponse = $this->openAIService->predictExpenses($expensesArray, $monthlyBudget);
-
-        // Log the response for debugging
-        \Log::info('Predictions Response: ', $predictionsResponse);
-    
-        // Extract predictions and additional info
-        $predictionsArray = $predictionsResponse['predicted_expenses'] ?? [];
-        $totalPredictedExpenses = $predictionsResponse['total_predicted_expenses'] ?? 0;
-        $projectedSavings = $predictionsResponse['projected_savings'] ?? 0;
-    
+     
     
         $labels = $groupedExpenses->pluck('name'); 
         $data = $groupedExpenses->pluck('amount'); 
@@ -140,9 +130,6 @@ class HomeController extends Controller
             'labels', 
             'data', 
             'remainingBudget',
-            'predictionsArray', 'predictionsArray',
-            'totalPredictedExpenses',
-            'projectedSavings' // Include predictions
         ));
     }
     
