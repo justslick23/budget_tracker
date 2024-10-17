@@ -89,14 +89,14 @@ class HomeController extends Controller
             });
     
         $recentTransactions = $recentExpenses->merge($recentIncome)->sortByDesc('date');
+
         $netSavings = $monthlyBudget - $totalExpenses;
 
     
       // Fetch all categories
 $allCategories = Category::all();
 
-// Group recent expenses by category
-// Group recent expenses by category
+/// Group recent expenses by category
 $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric) {
     // Get the category ID for this group
     $categoryId = $group->first()->category_id; 
@@ -128,13 +128,9 @@ $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group
     return null; // If no valid category or no expenses, return null
 })->filter(); // Use filter to remove any null results
 
-// Prepare final data with only categories that have expenses
-$filteredCategories = $allCategories->filter(function ($category) use ($groupedExpenses) {
-    return $groupedExpenses->contains('name', $category->name); // Check if the category has expenses
-});
-
-// Prepare the final output
-$finalData = $filteredCategories->map(function ($category) use ($groupedExpenses) {
+// Prepare the final output with all categories
+$finalData = $allCategories->map(function ($category) use ($groupedExpenses) {
+    // Find the expense data for this category
     $expenseData = $groupedExpenses->firstWhere('name', $category->name);
 
     return [
@@ -143,6 +139,9 @@ $finalData = $filteredCategories->map(function ($category) use ($groupedExpenses
         'budget' => $expenseData['budget'] ?? 0 // Set to 0 if no budget
     ];
 });
+
+// You can log or return the final data as needed
+\Log::info('Final Data:', $finalData->toArray());
 
 // Now you can use $finalData for your view
 

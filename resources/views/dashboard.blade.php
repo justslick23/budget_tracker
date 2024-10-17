@@ -131,6 +131,7 @@
                             <thead class="thead-light">
                                 <tr>
                                     <th>Description</th>
+
                                     <th>Transaction Type</th>
                                     <th>Amount</th>
                                     <th>Date</th>
@@ -140,7 +141,14 @@
                                 @foreach ($recentTransactions as $transaction)
                                     <tr>
                                         <td>{{ $transaction->description ?? $transaction->source }}</td>
-                                        <td>{{ $transaction->type }}</td>
+
+                                        <td>
+                                            @if ($transaction->type == 'Expense')
+                                                <span class="badge badge-danger">Expense</span>
+                                            @else
+                                                <span class="badge badge-success">Income</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             @if ($transaction->type == 'Expense')
                                                 <span class="text-danger">
