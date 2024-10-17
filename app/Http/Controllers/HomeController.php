@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Expense;
 use App\Models\Income;
 use App\Models\Budget;
+use App\Models\Category;
+
 use Carbon\Carbon;
 use Phpml\ModelManager; // Include this at the top if using PHP-ML
 use App\Services\OpenAIService; // Add this line
@@ -90,21 +92,51 @@ class HomeController extends Controller
         $netSavings = $monthlyBudget - $totalExpenses;
 
     
-        $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric) {
-            $categoryId = $group->first()->category_id; // Get the category ID for this group
-            
-            // Fetch the budget for the current category and month
-            $budgetForCategory = Budget::where('user_id', $userId)
-                ->where('category_id', $categoryId)
-                ->where('month', $currentMonthNumeric)
-                ->sum('amount');
-            
-            return [
-                'name' => $group->first()->category->name, // Category name
-                'expense' => $group->sum('amount'),        // Total expenses for the category
-                'budget' => $budgetForCategory             // Budget for the category
-            ];
-        });
+      // Fetch all categories
+$allCategories = Category::all();
+
+// Group recent expenses by category
+$groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric) {
+    $categoryId = $group->first()->category_id; // Get the category ID for this group
+
+    // Calculate the total expense for the current category
+    $totalExpense = $group->sum('amount');
+
+    // Only process categories that have expenses
+    if ($totalExpense > 0) {
+        // Fetch the budget for the current category and month
+        $budgetForCategory = Budget::where('user_id', $userId)
+            ->where('category_id', $categoryId)
+            ->where('month', $currentMonthNumeric)
+            ->sum('amount');
+
+        return [
+            'name' => $group->first()->category->name, // Category name
+            'expense' => $totalExpense,                // Total expenses for the category
+            'budget' => $budgetForCategory             // Budget for the category
+        ];
+    }
+
+    return null; // If no expenses, return null
+})->filter(); // Use filter to remove any null results
+
+// Prepare final data with only categories that have expenses
+$filteredCategories = $allCategories->filter(function ($category) use ($groupedExpenses) {
+    return $groupedExpenses->contains('name', $category->name); // Check if the category has expenses
+});
+
+// Prepare the final output
+$finalData = $filteredCategories->map(function ($category) use ($groupedExpenses) {
+    $expenseData = $groupedExpenses->firstWhere('name', $category->name);
+
+    return [
+        'name' => $category->name,
+        'expense' => $expenseData['expense'] ?? 0, // Set to 0 if no expenses
+        'budget' => $expenseData['budget'] ?? 0 // Set to 0 if no budget
+    ];
+});
+
+// Now you can use $finalData for your view
 
 
         $remainingBudget = $monthlyBudget - $totalExpenses;
