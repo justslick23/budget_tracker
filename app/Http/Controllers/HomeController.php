@@ -88,14 +88,25 @@ class HomeController extends Controller
     
         $recentTransactions = $recentExpenses->merge($recentIncome)->sortByDesc('date');
         $netSavings = $monthlyBudget - $totalExpenses;
+
     
-        $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) {
+        $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric) {
+            $categoryId = $group->first()->category_id; // Get the category ID for this group
+            
+            // Fetch the budget for the current category and month
+            $budgetForCategory = Budget::where('user_id', $userId)
+                ->where('category_id', $categoryId)
+                ->where('month', $currentMonthNumeric)
+                ->sum('amount');
+            
             return [
-                'name' => $group->first()->category->name,
-                'amount' => $group->sum('amount') 
-            ]; 
+                'name' => $group->first()->category->name, // Category name
+                'expense' => $group->sum('amount'),        // Total expenses for the category
+                'budget' => $budgetForCategory             // Budget for the category
+            ];
         });
-    
+
+
         $remainingBudget = $monthlyBudget - $totalExpenses;
     
         // Step 1: Fetch historical expenses for the logged-in user
@@ -117,8 +128,9 @@ class HomeController extends Controller
      
     
         $labels = $groupedExpenses->pluck('name'); 
-        $data = $groupedExpenses->pluck('amount'); 
-    
+        $data = $groupedExpenses->pluck('expense'); 
+        $budgetsData = $groupedExpenses->pluck('budget');  // Budgets for each category
+
         return view('dashboard', compact(
             'totalIncome',
             'totalExpenses',
@@ -129,7 +141,7 @@ class HomeController extends Controller
             'recentTransactions', 
             'labels', 
             'data', 
-            'remainingBudget',
+            'remainingBudget', 'budgetsData'
         ));
     }
     
