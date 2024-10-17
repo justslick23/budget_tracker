@@ -154,16 +154,8 @@ $finalData = $filteredCategories->map(function ($category) use ($groupedExpenses
             ->orderBy('date', 'asc')
             ->get();
     
-        // Prepare the expenses data for prediction
-        $expensesArray = $historicalExpenses->map(function ($expense) {
-            return [
-                'date' => $expense->date->format('Y-m-d'), // Format date as needed
-                'amount' => $expense->amount,
-                'category' => $expense->category->name,
-                'description' => $expense->description,
-                // Add any other relevant fields here if needed
-            ];
-        })->toArray();
+            $groupedExpensesArray = $groupedExpenses->values()->toArray();
+
     
      
     
