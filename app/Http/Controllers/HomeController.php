@@ -96,28 +96,36 @@ class HomeController extends Controller
 $allCategories = Category::all();
 
 // Group recent expenses by category
+// Group recent expenses by category
 $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric) {
-    $categoryId = $group->first()->category_id; // Get the category ID for this group
+    // Get the category ID for this group
+    $categoryId = $group->first()->category_id; 
 
     // Calculate the total expense for the current category
     $totalExpense = $group->sum('amount');
 
     // Only process categories that have expenses
     if ($totalExpense > 0) {
-        // Fetch the budget for the current category and month
-        $budgetForCategory = Budget::where('user_id', $userId)
-            ->where('category_id', $categoryId)
-            ->where('month', $currentMonthNumeric)
-            ->sum('amount');
+        // Fetch the category based on category_id
+        $category = Category::find($categoryId);
 
-        return [
-            'name' => $group->first()->category->name, // Category name
-            'expense' => $totalExpense,                // Total expenses for the category
-            'budget' => $budgetForCategory             // Budget for the category
-        ];
+        // Check if category exists
+        if ($category) {
+            // Fetch the budget for the current category and month
+            $budgetForCategory = Budget::where('user_id', $userId)
+                ->where('category_id', $categoryId)
+                ->where('month', $currentMonthNumeric)
+                ->sum('amount');
+
+            return [
+                'name' => $category->name, // Category name
+                'expense' => $totalExpense, // Total expenses for the category
+                'budget' => $budgetForCategory // Budget for the category
+            ];
+        }
     }
 
-    return null; // If no expenses, return null
+    return null; // If no valid category or no expenses, return null
 })->filter(); // Use filter to remove any null results
 
 // Prepare final data with only categories that have expenses
