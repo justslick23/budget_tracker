@@ -201,27 +201,48 @@
 @section('scripts')
 <script>
     // Expense Chart
-    const ctxExpense = document.getElementById('expenseChart').getContext('2d');
-    const expenseChart = new Chart(ctxExpense, {
-        type: 'bar',
-        data: {
-            labels: @json($labels),
-            datasets: [{
+// Budget vs Expense Chart
+const ctxBudgetExpense = document.getElementById('budgetExpenseChart').getContext('2d');
+const budgetExpenseChart = new Chart(ctxBudgetExpense, {
+    type: 'bar',
+    data: {
+        labels: @json($labels), // Category names
+        datasets: [
+            {
+                label: 'Budget',
+                data: @json($budgetsData), // Budget amounts
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1,
+            },
+            {
                 label: 'Expenses',
-                data: @json($expensesData),
+                data: @json($expensesData), // Expense amounts
                 backgroundColor: 'rgba(255, 99, 132, 0.2)',
                 borderColor: 'rgba(255, 99, 132, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
+                borderWidth: 1,
+            },
+        ]
+    },
+    options: {
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Amount',
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Categories',
                 }
             }
         }
-    });
+    }
+});
+
 
     // Budget Status Chart
     const ctxBudget = document.getElementById('budgetStatusChart').getContext('2d');
