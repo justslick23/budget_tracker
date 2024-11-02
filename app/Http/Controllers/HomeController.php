@@ -36,132 +36,255 @@ class HomeController extends Controller
      */
     public function index()
     {
+        $currentMonth = Carbon::now()->format('Y-m');
+        $currentMonthNumeric = Carbon::parse($currentMonth)->format('m'); 
+        $currentDate = now();
+        
         $userId = auth()->id();
-        if (!$userId) {
-            return redirect()->route('login'); // Redirect if not authenticated
-        }
+        $startDate = $currentDate->copy()->subMonth()->day(31)->startOfDay();
+        $endDate = $currentDate->copy()->day(31)->endOfDay();
     
-        $currentYear = Carbon::now()->year;
-        $currentMonth = Carbon::now();
+        $totalIncome = Income::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('amount');
     
-        // Create an array for month names
-        $months = [];
-        for ($i = 1; $i <= 12; $i++) {
-            $months[] = Carbon::createFromDate($currentYear, $i, 1)->format('F');
-        }
+        $totalExpenses = Expense::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->sum('amount');
     
-        // Current month income and expenses
-        $totalIncome = $this->fetchTotalIncome($userId, $currentMonth);
-        $totalExpenses = $this->fetchTotalExpenses($userId, $currentMonth);
-    
-        // Previous month calculations
-        $previousMonth = $currentMonth->copy()->subMonth();
-        $previousIncome = $this->fetchTotalIncome($userId, $previousMonth);
-        $previousExpenses = $this->fetchTotalExpenses($userId, $previousMonth);
-    
-        // Calculate percentage change
-        $incomePercentageChange = $this->calculatePercentageChange($totalIncome, $previousIncome);
-        $expensesPercentageChange = $this->calculatePercentageChange($totalExpenses, $previousExpenses);
-    
-        // Monthly budget
         $monthlyBudget = Budget::where('user_id', $userId)
-            ->where('month', $currentMonth->format('m'))
-            ->where('year', $currentYear)
-            ->first();
+            ->where('month', $currentMonthNumeric)
+            ->sum('amount');
     
-        $budgetAmount = $monthlyBudget ? $monthlyBudget->amount : 0; 
-        $remainingBudget = $budgetAmount - $totalExpenses;
+        $previousStartDate = $currentDate->copy()->subMonth()->day(26)->startOfDay();
+        $previousEndDate = $currentDate->copy()->subMonth()->day(25)->endOfDay();
     
-        // Recent transactions
-        $recentIncome = $this->getRecentIncome($userId, $currentMonth->startOfMonth(), $currentMonth->endOfMonth());
-        $recentExpenses = $this->getRecentExpenses($userId, $currentMonth->startOfMonth(), $currentMonth->endOfMonth());
-        $recentTransactions = $recentIncome->merge($recentExpenses)->sortByDesc('date');
+        $previousTotalIncome = Income::where('user_id', $userId)
+            ->whereBetween('date', [$previousStartDate, $previousEndDate])
+            ->sum('amount');
     
-        // Monthly report data
-        $monthlyIncome = [];
-        $monthlyExpenses = [];
-        $monthlyBudgets = [];
-        $remainingBudgets = [];
+        $previousTotalExpenses = Expense::where('user_id', $userId)
+            ->whereBetween('date', [$previousStartDate, $previousEndDate])
+            ->sum('amount');
     
-        foreach ($months as $index => $monthName) {
-            $monthNumeric = $index + 1;
+        $incomePercentageChange = $previousTotalIncome > 0 ? (($totalIncome - $previousTotalIncome) / $previousTotalIncome) * 100 : 0;
+        $expensesPercentageChange = $previousTotalExpenses > 0 ? (($totalExpenses - $previousTotalExpenses) / $previousTotalExpenses) * 100 : 0;
     
-            // Fetch total income and expenses for the month
-            $monthlyIncome[] = $this->fetchTotalIncome($userId, Carbon::createFromDate($currentYear, $monthNumeric, 1));
-            $monthlyExpenses[] = $this->fetchTotalExpenses($userId, Carbon::createFromDate($currentYear, $monthNumeric, 1));
+        $recentExpenses = Expense::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(function ($expense) {
+                $expense->type = 'Expense';
+                return $expense;
+            });
     
-            // Fetch budget for the month
-            $budget = Budget::where('user_id', $userId)
-                ->where('month', $monthNumeric)
-                ->where('year', $currentYear)
-                ->first(); 
+        $recentIncome = Income::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(function ($income) {
+                $income->type = 'Income';
+                return $income;
+            });
     
-            $budgetAmount = $budget ? $budget->amount : 0;
-            $monthlyBudgets[] = $budgetAmount; 
-            $remainingBudgets[] = $budgetAmount - $monthlyExpenses[$index];
+        $recentTransactions = $recentExpenses->merge($recentIncome)->sortByDesc('date');
+
+        $netSavings = $monthlyBudget - $totalExpenses;
+
+    
+      // Fetch all categories
+$allCategories = Category::all();
+
+/// Group recent expenses by category
+$groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric) {
+    // Get the category ID for this group
+    $categoryId = $group->first()->category_id; 
+
+    // Calculate the total expense for the current category
+    $totalExpense = $group->sum('amount');
+
+    // Only process categories that have expenses
+    if ($totalExpense > 0) {
+        // Fetch the category based on category_id
+        $category = Category::find($categoryId);
+
+        // Check if category exists
+        if ($category) {
+            // Fetch the budget for the current category and month
+            $budgetForCategory = Budget::where('user_id', $userId)
+                ->where('category_id', $categoryId)
+                ->where('month', $currentMonthNumeric)
+                ->sum('amount');
+
+            return [
+                'name' => $category->name, // Category name
+                'expense' => $totalExpense, // Total expenses for the category
+                'budget' => $budgetForCategory // Budget for the category
+            ];
         }
+    }
+
+    return null; // If no valid category or no expenses, return null
+})->filter(); // Use filter to remove any null results
+
+// Prepare the final output with all categories
+$finalData = $allCategories->map(function ($category) use ($groupedExpenses) {
+    // Find the expense data for this category
+    $expenseData = $groupedExpenses->firstWhere('name', $category->name);
+
+    return [
+        'name' => $category->name,
+        'expense' => $expenseData['expense'] ?? 0, // Set to 0 if no expenses
+        'budget' => $expenseData['budget'] ?? 0 // Set to 0 if no budget
+    ];
+});
+
+// You can log or return the final data as needed
+\Log::info('Final Data:', $finalData->toArray());
+
+// Now you can use $finalData for your view
+
+
+        $remainingBudget = $monthlyBudget - $totalExpenses;
     
-        return view('dashboard', [
-            'totalIncome' => $totalIncome,
-            'totalExpenses' => $totalExpenses,
-            'monthlyBudget' => $budgetAmount,
-            'remainingBudget' => $remainingBudget,
-            'recentTransactions' => $recentTransactions,
-            'labels' => $this->getChartLabels($currentMonth),
-            'data' => $this->getChartData($currentMonth),
-            'incomePercentageChange' => $incomePercentageChange,
-            'expensesPercentageChange' => $expensesPercentageChange,
-            'months' => $months,
-            'incomeData' => $monthlyIncome,
-            'expensesData' => $monthlyExpenses,
-            'budgetsData' => $monthlyBudgets,
-            'remainingBudgetsData' => $remainingBudgets,
-            'year' => $currentYear,
-        ]);
+        // Step 1: Fetch historical expenses for the logged-in user
+        $historicalExpenses = Expense::where('user_id', $userId)
+            ->orderBy('date', 'asc')
+            ->get();
+    
+            $groupedExpensesArray = $groupedExpenses->values()->toArray();
+
+    
+     
+    
+        $labels = $groupedExpenses->pluck('name'); 
+        $data = $groupedExpenses->pluck('expense'); 
+        $budgetsData = $groupedExpenses->pluck('budget');  // Budgets for each category
+
+        return view('dashboard', compact(
+            'totalIncome',
+            'totalExpenses',
+            'netSavings',
+            'monthlyBudget', 
+            'incomePercentageChange', 
+            'expensesPercentageChange', 
+            'recentTransactions', 
+            'labels', 
+            'data', 
+            'remainingBudget', 'budgetsData'
+        ));
     }
     
+/**
+ * Predict future expenses based on historical data.
+ *
+ * @param int $userId
+ * @return array
+ */
+private function predictExpenses($userId)
+{
+    // Fetch historical expenses for the logged-in user
+    $historicalExpenses = Expense::where('user_id', $userId)
+        ->orderBy('date', 'asc')
+        ->get(['amount', 'date']);
+
+    // Prepare data for prediction
+    $samples = [];
+    foreach ($historicalExpenses as $expense) {
+        // Using the day of the year as a feature and the amount as a target
+        $samples[] = [
+            Carbon::parse($expense->date)->dayOfYear, // Day of the year (1-365)
+            $expense->amount, // Historical expense amount
+        ];
+    }
+
+    // Load the trained machine learning model
+    $modelManager = new ModelManager();
+    $model = $modelManager->restoreFromFile('model/lr_model.phpml'); // Adjust the path as necessary
+
+    // Prepare an array to hold predictions for the next 30 days
+    $predictions = [];
+
+    // Get the last day of the year based on historical data
+    $lastDayOfYear = max(array_column($samples, 0)); // Find the maximum day of the year from historical data
+
+    // Make predictions (e.g., for the next 30 days)
+    for ($i = 1; $i <= 30; $i++) {
+        // Increment the day of the year based on the last recorded day
+        $predictedDay = $lastDayOfYear + $i;
+        
+        // Predict future expense for the predicted day
+        $predictedAmount = $model->predict([[$predictedDay, 0]]); // Adjust input as necessary (e.g., 0 for no previous expense)
+
+        $predictions[] = [
+            'day' => $predictedDay,
+            'amount' => $predictedAmount[0], // Assuming your model returns an array
+        ];
+    }
+
+    return $predictions; // Return the predictions for the next 30 days
+}
 
 public function filter(Request $request)
 {
     $month = $request->input('month', Carbon::now()->format('Y-m'));
-    $userId = auth()->id();
-    $currentMonthNumeric = Carbon::parse($month)->format('m'); 
-    $yearNumeric = Carbon::parse($month)->format('Y'); 
+    $currentMonthNumeric = Carbon::parse($month)->format('m'); // e.g., '10'
+    $yearNumeric = Carbon::parse($month)->format('Y'); // e.g., '10'
 
     // Current month income and expenses
-    $totalIncome = $this->fetchTotalIncome($userId, Carbon::parse($month));
-    $totalExpenses = $this->fetchTotalExpenses($userId, Carbon::parse($month));
+    $totalIncome = Income::where('user_id', auth()->id())
+        ->whereMonth('date', Carbon::parse($month)->month)
+        ->whereYear('date', Carbon::parse($month)->year)
+        ->sum('amount');
+
+    $totalExpenses = Expense::where('user_id', auth()->id())
+        ->whereMonth('date', Carbon::parse($month)->month)
+        ->whereYear('date', Carbon::parse($month)->year)
+        ->sum('amount');
 
     // Previous month income and expenses
     $previousMonth = Carbon::parse($month)->subMonth();
-    $previousIncome = $this->fetchTotalIncome($userId, $previousMonth);
-    $previousExpenses = $this->fetchTotalExpenses($userId, $previousMonth);
 
-    // Calculate percentage change
-    $incomePercentageChange = $this->calculatePercentageChange($totalIncome, $previousIncome);
-    $expensesPercentageChange = $this->calculatePercentageChange($totalExpenses, $previousExpenses);
+    $previousIncome = Income::where('user_id', auth()->id())
+        ->whereMonth('date', $previousMonth->month)
+        ->whereYear('date', $previousMonth->year)
+        ->sum('amount');
 
-    // Monthly budget
-    $monthlyBudget = Budget::where('user_id', $userId)
-        ->where('month', $currentMonthNumeric)
-        ->where('year', $yearNumeric)
-        ->first(); 
+    $previousExpenses = Expense::where('user_id', auth()->id())
+        ->whereMonth('date', $previousMonth->month)
+        ->whereYear('date', $previousMonth->year)
+        ->sum('amount');
 
-    $budgetAmount = $monthlyBudget ? $monthlyBudget->amount : 0; 
+    // Calculate percentage change for income and expenses
+    $incomePercentageChange = $previousIncome != 0 ? (($totalIncome - $previousIncome) / $previousIncome) * 100 : 0;
+    $expensesPercentageChange = $previousExpenses != 0 ? (($totalExpenses - $previousExpenses) / $previousExpenses) * 100 : 0;
+
+    $monthlyBudget = Budget::where('user_id', auth()->id())
+    ->where('month',   $currentMonthNumeric )
+    ->where('year',  $yearNumeric )
+    ->first(); 
+    
+    $budgetAmount = $monthlyBudget ? $monthlyBudget->amount : 0; // If no budget exists, default to 0
+
     $remainingBudget = $budgetAmount - $totalExpenses;
 
-    // Budgets data for the chart
-    $budgetsData = []; // Initialize the budgets data array
+    $recentIncome = Income::where('user_id', auth()->id())
+        ->whereMonth('date', Carbon::parse($month)->month)
+        ->whereYear('date', Carbon::parse($month)->year)
+        ->get()->map(function ($income) {
+            $income->type = 'Income';
+            return $income;
+        });
 
-    if ($monthlyBudget) {
-        $budgetsData = [$budgetAmount]; // Example: You can customize this to match your requirements
-    } else {
-        $budgetsData = [0]; // If there's no budget, set it to zero
-    }
+    $recentExpenses = Expense::where('user_id', auth()->id())
+        ->whereMonth('date', Carbon::parse($month)->month)
+        ->whereYear('date', Carbon::parse($month)->year)
+        ->get()->map(function ($expense) {
+            $expense->type = 'Expense';
+            return $expense;
+        });
 
-    // Recent transactions
-    $recentIncome = $this->getRecentIncome($userId, Carbon::parse($month)->startOfMonth(), Carbon::parse($month)->endOfMonth());
-    $recentExpenses = $this->getRecentExpenses($userId, Carbon::parse($month)->startOfMonth(), Carbon::parse($month)->endOfMonth());
     $recentTransactions = $recentIncome->merge($recentExpenses)->sortByDesc('date');
 
     return view('dashboard', [
@@ -172,7 +295,6 @@ public function filter(Request $request)
         'recentTransactions' => $recentTransactions,
         'labels' => $this->getChartLabels($month),
         'data' => $this->getChartData($month),
-        'budgetsData' => $budgetsData, // Pass the budgets data to the view
         'incomePercentageChange' => $incomePercentageChange,
         'expensesPercentageChange' => $expensesPercentageChange
     ]);
@@ -192,107 +314,30 @@ private function getChartLabels($month)
 
     return $labels;
 }
-
-private function fetchTotalIncome($userId, $month)
-{
-    return Income::where('user_id', $userId)
-        ->whereMonth('date', $month->month)
-        ->whereYear('date', $month->year)
-        ->sum('amount');
-}
-
-private function fetchTotalExpenses($userId, $month)
-{
-    return Expense::where('user_id', $userId)
-        ->whereMonth('date', $month->month)
-        ->whereYear('date', $month->year)
-        ->sum('amount');
-}
-
-private function calculatePercentageChange($current, $previous)
-{
-    return $previous != 0 ? (($current - $previous) / $previous) * 100 : 0;
-}
-
-private function getRecentIncome($userId, $startDate, $endDate)
-{
-    return Income::where('user_id', $userId)
-        ->whereBetween('date', [$startDate, $endDate])
-        ->orderBy('date', 'desc')
-        ->get()->map(function ($income) {
-            $income->type = 'Income';
-            return $income;
-        });
-}
-
-private function getRecentExpenses($userId, $startDate, $endDate)
-{
-    return Expense::where('user_id', $userId)
-        ->whereBetween('date', [$startDate, $endDate])
-        ->orderBy('date', 'desc')
-        ->get()->map(function ($expense) {
-            $expense->type = 'Expense';
-            return $expense;
-        });
-}
-
-private function groupExpensesByCategory($recentExpenses, $userId, $currentMonthNumeric)
-{
-    return $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric) {
-        $categoryId = $group->first()->category_id; 
-        $totalExpense = $group->sum('amount');
-
-        if ($totalExpense > 0) {
-            $category = Category::find($categoryId);
-            if ($category) {
-                $budgetForCategory = Budget::where('user_id', $userId)
-                    ->where('category_id', $categoryId)
-                    ->where('month', $currentMonthNumeric)
-                    ->sum('amount');
-
-                return [
-                    'name' => $category->name,
-                    'expense' => $totalExpense,
-                    'budget' => $budgetForCategory
-                ];
-            }
-        }
-        return null; 
-    })->filter(); 
-}
-
-private function prepareFinalData($allCategories, $groupedExpenses)
-{
-    return $allCategories->map(function ($category) use ($groupedExpenses) {
-        $expenseData = $groupedExpenses->firstWhere('name', $category->name);
-        return [
-            'name' => $category->name,
-            'expense' => $expenseData['expense'] ?? 0,
-            'budget' => $expenseData['budget'] ?? 0
-        ];
-    });
-}
-
-
 private function getChartData($month)
 {
+    // Get the total number of days in the selected month
     $daysInMonth = Carbon::parse($month)->daysInMonth;
+
+    // Initialize an array to store expense totals for each day
     $data = array_fill(0, $daysInMonth, []);
-    
-    $expenses = Expense::with('category')
+
+    // Fetch all expenses for the selected month
+    $expenses = Expense::with('category') // Assuming a relationship named 'category'
         ->where('user_id', auth()->id())
         ->whereMonth('date', Carbon::parse($month)->month)
         ->whereYear('date', Carbon::parse($month)->year)
         ->get();
 
+    // Loop through the expenses and sum the amounts by day
     foreach ($expenses as $expense) {
         $day = Carbon::parse($expense->date)->day;
+        // Store the amount under the category name
         $data[$day - 1][$expense->category->name] = ($data[$day - 1][$expense->category->name] ?? 0) + $expense->amount;
     }
 
-    return $data; 
+    return $data; // Now $data will be an array of arrays with amounts categorized by day
 }
-
 
 
 
