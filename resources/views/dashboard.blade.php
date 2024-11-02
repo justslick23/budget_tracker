@@ -6,18 +6,6 @@
 <div class="container-fluid">
     <h1 class="h3 mb-4 text-gray-800"><strong>Budget Tracker</strong> Dashboard</h1>
 
-    <!-- Month Filter -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <form action="{{ route('dashboard.filter') }}" method="GET" class="form-inline">
-                <div class="form-group">
-                    <label for="month" class="mr-2">Select Month:</label>
-                    <input type="month" id="month" name="month" class="form-control" value="{{ request('month', \Carbon\Carbon::now()->format('Y-m')) }}">
-                </div>
-                <button type="submit" class="btn btn-primary ml-3">Filter</button>
-            </form>
-        </div>
-    </div>
 
     <div class="row">
         <!-- Total Income Card -->
