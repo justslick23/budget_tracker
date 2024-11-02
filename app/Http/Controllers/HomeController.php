@@ -96,7 +96,7 @@ foreach ($months as $index => $monthName) {
     $monthlyBudget = Budget::where('user_id', $userId)
         ->where('month', $monthNumeric)
         ->where('year', $currentYear)
-        ->first();
+        ->sum('amount');
 
     $budgetAmount = $monthlyBudget ? $monthlyBudget->amount : 0;
     \Log::info("Budget for month $monthNumeric: $budgetAmount");
