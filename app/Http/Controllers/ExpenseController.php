@@ -32,7 +32,7 @@ class ExpenseController extends Controller
 
     public function create()
     {
-        $categories = Category::all(); // Fetch all categories
+        $categories = Category::where('user_id', auth()->user()->id)->get(); // Fetch all categories
 
         return view('expenses.create', compact('categories'));
     }

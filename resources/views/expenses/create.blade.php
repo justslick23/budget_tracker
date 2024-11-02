@@ -8,7 +8,7 @@
             <form action="{{ route('expenses.store') }}" method="POST">
                 @csrf
                 <div class="mb-3">
-                    <label for="amount" class="form-label">Amount ($)</label>
+                    <label for="amount" class="form-label">Amount (M)</label>
                     <input type="number" class="form-control @error('amount') is-invalid @enderror" id="amount" name="amount" required step="0.01" placeholder="Enter amount">
                     @error('amount')
                         <div class="invalid-feedback">{{ $message }}</div>

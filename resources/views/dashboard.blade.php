@@ -7,17 +7,7 @@
     <h1 class="h3 mb-4 text-gray-800"><strong>Budget Tracker</strong> Dashboard</h1>
 
     <!-- Month Filter -->
-    <div class="row mb-4">
-        <div class="col-md-6">
-            <form action="{{ route('dashboard.filter') }}" method="GET" class="form-inline">
-                <div class="form-group">
-                    <label for="month" class="mr-2">Select Month:</label>
-                    <input type="month" id="month" name="month" class="form-control" value="{{ request('month', \Carbon\Carbon::now()->format('Y-m')) }}">
-                </div>
-                <button type="submit" class="btn btn-primary ml-3">Filter</button>
-            </form>
-        </div>
-    </div>
+ 
 
     <div class="row">
         <!-- Total Income Card -->
@@ -127,45 +117,79 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                    <table class="table table-hover" id="transactionsTable">
-    <thead class="thead-light">
-        <tr>
-            <th>Description</th>
-            <th>Transaction Type</th>
-            <th>Amount</th>
-            <th>Date</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach ($recentTransactions as $transaction)
-            <tr>
-                <td>{{ $transaction->description ?? $transaction->source }}</td>
-                <td>
-                    @if ($transaction->type == 'Expense')
-                        <span class="badge badge-danger">Expense</span>
-                    @else
-                        <span class="badge badge-success">Income</span>
-                    @endif
-                </td>
-                <td>
-                    @if ($transaction->type == 'Expense')
-                        <span class="text-danger">
-                            M{{ number_format(abs($transaction->amount), 2) }} 
-                            <i class="ti-arrow-down"></i>
-                        </span>
-                    @else
-                        <span class="text-success">
-                            M{{ number_format($transaction->amount, 2) }} 
-                            <i class="ti-arrow-up"></i>
-                        </span>
-                    @endif
-                </td>
-                <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
-            </tr>
-        @endforeach
-    </tbody>
-</table>
+                        <table class="table table-hover" id="transactionsTable">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Description</th>
+                                    <th>Transaction Type</th>
+                                    <th>Amount</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($recentTransactions as $transaction)
+                                    <tr>
+                                        <td>{{ $transaction->description ?? $transaction->source }}</td>
+                                        <td>
+                                            @if ($transaction->type == 'Expense')
+                                                <span class="badge badge-danger">Expense</span>
+                                            @else
+                                                <span class="badge badge-success">Income</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($transaction->type == 'Expense')
+                                                <span class="text-danger">
+                                                    M{{ number_format(abs($transaction->amount), 2) }} 
+                                                    <i class="ti-arrow-down"></i>
+                                                </span>
+                                            @else
+                                                <span class="text-success">
+                                                    M{{ number_format($transaction->amount, 2) }} 
+                                                    <i class="ti-arrow-up"></i>
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
+    <!-- Monthly Report Section -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Monthly Report for {{ $year }}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Month</th>
+                                    <th>Income</th>
+                                    <th>Expenses</th>
+                                    <th>Budget</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($months as $index => $month)
+                                    <tr>
+                                        <td>{{ $month }}</td>
+                                        <td>M{{ number_format($incomeData[$index], 2) }}</td>
+                                        <td>M{{ number_format($expensesData[$index], 2) }}</td>
+                                        <td>M{{ number_format($budgetsData[$index], 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -177,78 +201,44 @@
 @section('scripts')
 <script>
     // Expense Chart
-   // Expense and Budget Comparison Chart
-const ctxExpense = document.getElementById('expenseChart').getContext('2d');
-const expenseChart = new Chart(ctxExpense, {
-    type: 'bar',
-    data: {
-        labels: @json($labels), // Categories
-        datasets: [
-            {
+    const ctxExpense = document.getElementById('expenseChart').getContext('2d');
+    const expenseChart = new Chart(ctxExpense, {
+        type: 'bar',
+        data: {
+            labels: @json($labels),
+            datasets: [{
                 label: 'Expenses',
-                data: @json($data), // Expenses dataset
-                backgroundColor: 'rgba(255, 99, 132, 0.2)', // Light red for expenses
+                data: @json($expensesData),
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
                 borderColor: 'rgba(255, 99, 132, 1)',
                 borderWidth: 1
-            },
-            {
-                label: 'Budget',
-                data: @json($budgetsData), // Budgets dataset
-                backgroundColor: 'rgba(54, 162, 235, 0.2)', // Light blue for budget
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }
-        ]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: {
-                beginAtZero: true
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
             }
         }
-    }
-});
-
+    });
 
     // Budget Status Chart
     const ctxBudget = document.getElementById('budgetStatusChart').getContext('2d');
     const budgetStatusChart = new Chart(ctxBudget, {
         type: 'pie',
         data: {
-            labels: ['Remaining', 'Spent'],
+            labels: ['Expenses', 'Remaining Budget'],
             datasets: [{
-                data: [{{ $remainingBudget }}, {{ $totalExpenses }}],
-                backgroundColor: ['#36A2EB', '#FF6384'],
-                hoverOffset: 4
+                data: [{{ $totalExpenses }}, {{ $remainingBudget }}],
+                backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)'],
+                borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
+                borderWidth: 1
             }]
         },
         options: {
-            responsive: true
+            responsive: true,
         }
     });
 </script>
-<script>
-    $(document).ready(function() {
-        $('#transactionsTable').DataTable({
-            responsive: true,
-            paging: true,
-            searching: true,
-            ordering: true,
-            lengthMenu: [5, 10, 25, 50], // Customize the number of rows displayed per page
-            columnDefs: [
-                { orderable: false, targets: [0, 2] } // Disable ordering on specific columns (e.g., Description, Amount)
-            ],
-            language: {
-                search: "Search by keyword:",
-                lengthMenu: "Show _MENU_ entries per page",
-                zeroRecords: "No transactions found",
-                info: "Showing page _PAGE_ of _PAGES_",
-                infoEmpty: "No entries available",
-                infoFiltered: "(filtered from _MAX_ total entries)"
-            }
-        });
-    });
-</script>
-
 @endsection
