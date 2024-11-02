@@ -92,14 +92,13 @@ foreach ($months as $index => $monthName) {
     $totalExpenses = $this->fetchTotalExpenses($userId, Carbon::createFromDate($currentYear, $monthNumeric, 1));
     \Log::info("Total Expenses for $monthNumeric: $totalExpenses");
 
-    // Monthly budget
-    $monthlyBudget = Budget::where('user_id', $userId)
+    // Sum of budgets for the user for the specific month and year
+    $budgetAmount = Budget::where('user_id', $userId)
         ->where('month', $monthNumeric)
         ->where('year', $currentYear)
-        ->sum('amount');
+        ->sum('amount'); // Change here to sum the budget amounts
 
-    $budgetAmount = $monthlyBudget ? $monthlyBudget->amount : 0;
-    \Log::info("Budget for month $monthNumeric: $budgetAmount");
+    \Log::info("Total Budget for month $monthNumeric: $budgetAmount");
 
     $remainingBudget = $budgetAmount - $totalExpenses;
 
@@ -109,6 +108,7 @@ foreach ($months as $index => $monthName) {
     $monthlyBudgets[] = $budgetAmount;
     $remainingBudgets[] = $remainingBudget;
 }
+
 
     return view('dashboard', [
         'totalIncome' => $totalIncome,
