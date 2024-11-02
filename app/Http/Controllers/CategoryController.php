@@ -12,7 +12,7 @@ class CategoryController extends Controller
 
         $userId = auth()->id(); // Get the authenticated user's ID
 
-        $categories = Category::all(); // Fetch all categories
+        $categories = Category::where('user_id', $userId)->get(); // Fetch all categories
         return view('categories.index', compact('categories')); // Return view with categories
     }
 

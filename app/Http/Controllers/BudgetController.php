@@ -17,10 +17,43 @@ class BudgetController extends Controller
         return view('budgets.index', compact('budgets'));
     }
 
+    public function edit(Budget $budget)
+    {
+        $categories = Category::where('user_id', auth()->user()->id)->get();
+        return view('budgets.edit', compact('budget', 'categories')); // Return edit view with category
+    }
+
+    public function update(Request $request, $id)
+{
+    // Validate the incoming request
+    $request->validate([
+        'year' => 'required|integer|min:2000|max:2100',
+        'month' => 'required|integer|min:1|max:12',
+        'category_id' => 'required|exists:categories,id',
+        'amount' => 'required|numeric|min:0',
+    ]);
+
+    // Find the budget by ID
+    $budget = Budget::findOrFail($id);
+
+    // Update the budget with validated data
+    $budget->update([
+        'year' => $request->input('year'),
+        'month' => $request->input('month'),
+        'category_id' => $request->input('category_id'),
+        'amount' => $request->input('amount'),
+    ]);
+
+    // Redirect back with a success message
+    return redirect()->route('budgets.index')->with('success', 'Budget updated successfully.');
+}
+
+
 
     public function create()
     {
-        $categories = Category::all();
+        $userID = auth()->user()->id;
+        $categories = Category::where('user_id', $userID)->get();
         return view('budgets.create', compact('categories'));
     }
 

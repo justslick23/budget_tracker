@@ -16,9 +16,15 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha384-k6RqeWeci5ZR/Lv4MR0sA0FfDOMm7P/4s4/c1A7yxeK1ukbF0aAO9n/0KnL7pdp" crossorigin="anonymous">
 
 <!-- Plugin css for this page -->
-{{-- <link rel="stylesheet" href="{{ asset('assets/vendors/datatables/net-bs4/dataTables.bootstrap4.css') }}"> --}}
-<link rel="stylesheet" href="{{ asset('assets/vendors/datatables/net-bs5/dataTables.bootstrap5.css') }}">
-<link rel="stylesheet" type="text/css" href="{{ asset('assets/js/select.dataTables.min.css') }}">
+<!-- DataTables CSS -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
 <!-- End plugin css for this page -->
 
 <!-- inject:css -->

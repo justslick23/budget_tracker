@@ -127,46 +127,45 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                        <table class="table table-hover" id="transactionsTable">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>Description</th>
+                    <table class="table table-hover" id="transactionsTable">
+    <thead class="thead-light">
+        <tr>
+            <th>Description</th>
+            <th>Transaction Type</th>
+            <th>Amount</th>
+            <th>Date</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach ($recentTransactions as $transaction)
+            <tr>
+                <td>{{ $transaction->description ?? $transaction->source }}</td>
+                <td>
+                    @if ($transaction->type == 'Expense')
+                        <span class="badge badge-danger">Expense</span>
+                    @else
+                        <span class="badge badge-success">Income</span>
+                    @endif
+                </td>
+                <td>
+                    @if ($transaction->type == 'Expense')
+                        <span class="text-danger">
+                            M{{ number_format(abs($transaction->amount), 2) }} 
+                            <i class="ti-arrow-down"></i>
+                        </span>
+                    @else
+                        <span class="text-success">
+                            M{{ number_format($transaction->amount, 2) }} 
+                            <i class="ti-arrow-up"></i>
+                        </span>
+                    @endif
+                </td>
+                <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
+            </tr>
+        @endforeach
+    </tbody>
+</table>
 
-                                    <th>Transaction Type</th>
-                                    <th>Amount</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($recentTransactions as $transaction)
-                                    <tr>
-                                        <td>{{ $transaction->description ?? $transaction->source }}</td>
-
-                                        <td>
-                                            @if ($transaction->type == 'Expense')
-                                                <span class="badge badge-danger">Expense</span>
-                                            @else
-                                                <span class="badge badge-success">Income</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if ($transaction->type == 'Expense')
-                                                <span class="text-danger">
-                                                    M{{ number_format(abs($transaction->amount), 2) }} 
-                                                    <i class="ti-arrow-down"></i>
-                                                </span>
-                                            @else
-                                                <span class="text-success">
-                                                    M{{ number_format($transaction->amount, 2) }} 
-                                                    <i class="ti-arrow-up"></i>
-                                                </span>
-                                            @endif
-                                        </td>
-                                        <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
@@ -229,4 +228,27 @@ const expenseChart = new Chart(ctxExpense, {
         }
     });
 </script>
+<script>
+    $(document).ready(function() {
+        $('#transactionsTable').DataTable({
+            responsive: true,
+            paging: true,
+            searching: true,
+            ordering: true,
+            lengthMenu: [5, 10, 25, 50], // Customize the number of rows displayed per page
+            columnDefs: [
+                { orderable: false, targets: [0, 2] } // Disable ordering on specific columns (e.g., Description, Amount)
+            ],
+            language: {
+                search: "Search by keyword:",
+                lengthMenu: "Show _MENU_ entries per page",
+                zeroRecords: "No transactions found",
+                info: "Showing page _PAGE_ of _PAGES_",
+                infoEmpty: "No entries available",
+                infoFiltered: "(filtered from _MAX_ total entries)"
+            }
+        });
+    });
+</script>
+
 @endsection

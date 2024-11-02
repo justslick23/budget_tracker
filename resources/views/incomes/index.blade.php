@@ -43,11 +43,15 @@
                             <td>M{{ number_format($income->amount, 2) }}</td>
                             <td>{{ \Carbon\Carbon::parse($income->date)->format('Y-m-d') }}</td>
                             <td>
-                                <a href="#" class="btn btn-sm btn-outline-info">Edit</a>
-                                <form action="#" method="POST" style="display:inline;">
+                                <!-- Edit Button -->
+                                <a href="{{ route('incomes.edit', $income->id) }}" class="btn btn-sm btn-outline-info">Edit</a>
+                                
+                                <!-- Delete Button -->
+                                <form action="{{ route('incomes.destroy', $income->id) }}" method="POST" style="display:inline;">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
+                                            onclick="return confirm('Are you sure you want to delete this income?');">Delete</button>
                                 </form>
                             </td>
                         </tr>

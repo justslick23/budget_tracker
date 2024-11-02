@@ -77,6 +77,41 @@ class ExpenseController extends Controller
     return redirect()->route('expenses.index')->with('success', 'Expense added successfully.');
 
     }
+
+    public function edit($id)
+{
+    $expense = Expense::findOrFail($id); // Fetch the expense by ID
+    $categories = Category::all(); // Fetch all categories for the dropdown
+
+    return view('expenses.edit', compact('expense', 'categories'));
+}
+
+public function update(Request $request, $id)
+{
+    // Validate the incoming request data
+    $request->validate([
+        'amount' => 'required|numeric|min:0',
+        'category_id' => 'required|exists:categories,id',
+        'description' => 'required|string|max:255',
+        'date' => 'required|date',
+    ]);
+
+    // Find the expense by ID
+    $expense = Expense::findOrFail($id);
+
+    // Update the expense with validated data
+    $expense->update([
+        'amount' => $request->input('amount'),
+        'category_id' => $request->input('category_id'),
+        'description' => $request->input('description'),
+        'date' => $request->input('date'),
+    ]);
+
+    // Redirect back to the expenses list with a success message
+    return redirect()->route('expenses.index')->with('success', 'Expense updated successfully.');
+}
+
+
     
     public function destroy($id)
     {
