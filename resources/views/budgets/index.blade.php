@@ -33,19 +33,19 @@
             </tr>
         </thead>
         <tbody>
-            @foreach ($budgets as $budget)
+            @foreach ($budgetSummary as $summary)
             <tr>
-                <td>{{ \Carbon\Carbon::create()->month($budget->month)->format('F') }}</td> <!-- Full month name -->
-                <td>{{ $budget->year }}</td>
-                <td>{{ $budget->category->name }}</td> <!-- Assuming category has a 'name' attribute -->
-                <td>M{{ number_format($budget->amount, 2) }}</td>
-                <td>M{{ number_format($budget->spent, 2) }}</td>
-                <td>M{{ number_format($budget->amount - $budget->spent, 2) }}</td>
+            <td>{{ \Carbon\Carbon::create()->month($summary['month'])->format('F') }}</td> <!-- Full month name -->
+                    <td>{{ $summary['year'] }}</td>
+                    <td>{{ $summary['category'] }}</td> <!-- Category name -->
+                    <td>M{{ $summary['allocated_amount'] }}</td>
+                    <td>M{{ $summary['total_spent'] }}</td>
+                    <td>M{{ $summary['remaining_balance'] }}</td> <!-- Remaining balance -->
                 <td>
-                    <a href="{{ route('budgets.edit', $budget->id) }}" class="btn btn-warning btn-sm">
+                    <a href="{{ route('budgets.edit', $summary['id']) }}" class="btn btn-warning btn-sm">
                         <i class="fas fa-edit"></i> Edit
                     </a>
-                    <form action="{{ route('budgets.destroy', $budget->id) }}" method="POST" style="display:inline-block;">
+                    <form action="{{ route('budgets.destroy', $summary['id']) }}" method="POST" style="display:inline-block;">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete this budget?');">

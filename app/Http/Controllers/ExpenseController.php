@@ -26,15 +26,19 @@ class ExpenseController extends Controller
     {
         $userId = auth()->id(); // Get the currently authenticated user's ID
         $expenses = Expense::with('category')->where('user_id', $userId)->get(); // Eager load category
-    
-        return view('expenses.index', compact('expenses'));
+       // This ensures only unique descriptions are retrieved
+        return view('expenses.index', compact('expenses' ));
     }
 
     public function create()
-    {
-        $categories = Category::where('user_id', auth()->user()->id)->get(); // Fetch all categories
+    {        $userId = auth()->id(); // Get the currently authenticated user's ID
 
-        return view('expenses.create', compact('categories'));
+        $categories = Category::where('user_id', auth()->user()->id)->get(); // Fetch all categories
+        $pastDescriptions = Expense::where('user_id', $userId)
+        ->pluck('description')
+        ->unique();
+        
+        return view('expenses.create', compact('categories', 'pastDescriptions'));
     }
 
     public function store(Request $request)

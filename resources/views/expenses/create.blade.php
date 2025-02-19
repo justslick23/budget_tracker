@@ -30,13 +30,26 @@
 
 
 
-                <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control @error('description') is-invalid @enderror" id="description" name="description" rows="3" placeholder="Enter a brief description" required></textarea>
-                    @error('description')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
-                </div>
+<div class="mb-3">
+    <label for="description" class="form-label">Description</label>
+    <input class="form-control @error('description') is-invalid @enderror" 
+           id="description" 
+           name="description" 
+           list="pastDescriptions" 
+           placeholder="Enter a brief description" 
+           required>
+    
+    <datalist id="pastDescriptions">
+        @foreach ($pastDescriptions as $description)
+            <option value="{{ $description }}"></option>
+        @endforeach
+    </datalist>
+    
+    @error('description')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
+
 
                 <div class="mb-3">
                     <label for="date" class="form-label">Date</label>

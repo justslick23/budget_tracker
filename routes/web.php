@@ -16,5 +16,5 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('incomes', IncomeController::class);
     Route::resource('budgets', BudgetController::class);
     Route::resource('categories', CategoryController::class);
-    Route::get('/filter', [HomeController::class, 'filter'])->name('dashboard.filter');
+    Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard.index');
 });

@@ -21,13 +21,16 @@
             </div>
 
             <div class="mb-3">
-                <label for="month" class="form-label">Month</label>
-                <select name="month" id="month" class="form-control" required>
-                    @for ($i = 1; $i <= 12; $i++)
-                        <option value="{{ $i }}">{{ date('F', mktime(0, 0, 0, $i, 1)) }}</option>
-                    @endfor
-                </select>
-            </div>
+    <label for="month" class="form-label">Month</label>
+    <select name="month" id="month" class="form-control" required>
+        @for ($i = 1; $i <= 12; $i++)
+            <option value="{{ $i }}" 
+                @if ($i == date('n')) selected @endif>
+                {{ date('F', mktime(0, 0, 0, $i, 1)) }}
+            </option>
+        @endfor
+    </select>
+</div>
 
             <div class="mb-3">
                 <label for="category_id" class="form-label">Category</label>

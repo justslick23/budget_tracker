@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Crypt;
 
 class Expense extends Model
 {
@@ -25,5 +26,13 @@ public function category()
     return $this->belongsTo(Category::class);
 }
 
+public function getAmountAttribute($value)
+{
+    return (float) Crypt::decryptString($value); // Convert decrypted value back to float
+}
+public function setAmountAttribute($value)
+{
+    $this->attributes['amount'] = Crypt::encryptString((string) $value); // Ensure it is saved as a string
+}
 
 }

@@ -5,16 +5,75 @@ namespace App\Http\Controllers;
 use App\Models\Budget;
 use Illuminate\Http\Request;
 use App\Models\Category;
+use App\Models\Expense;
+
+use Illuminate\Support\Facades\Crypt;
 
 class BudgetController extends Controller
 {
 
     public function index()
     {
-        $budgets = Budget::with('category')
-                         ->where('user_id', auth()->id())->get();
+ // Fetch the allocated amounts from the budgets table
+ $budgets = Budget::where('user_id', auth()->id())
+ ->get(['id', 'year', 'month', 'category_id', 'amount']); // Allocated Amount
 
-        return view('budgets.index', compact('budgets'));
+// Fetch the expenses, including category name from the categories table
+$expenses = Expense::where('expenses.user_id', auth()->id()) // Specify the table in WHERE clause
+   ->join('categories', 'expenses.category_id', '=', 'categories.id') // Join with categories
+   ->get(['expenses.date', 'expenses.amount', 'expenses.category_id', 'categories.name as category']); // Get category name
+
+// Prepare an array to store the final budget summary
+$budgetSummary = [];
+
+// Loop through each budget entry
+foreach ($budgets as $budget) {
+// Initialize the data for each month/category
+$key = $budget->year . '-' . $budget->month . '-' . $budget->category_id;
+
+// Set the allocated amount
+$budgetSummary[$key] = [
+    'id' => $budget->id,  // Store the budget id
+
+'year' => $budget->year,
+'month' => $budget->month,
+'category_id' => $budget->category_id,
+'category' => $budget->category->name,  // Fetch category name
+'allocated_amount' => $budget->amount,
+'total_spent' => 0, // Default to 0, we'll sum this up later
+'remaining_balance' => 0, // We'll calculate this later
+];
+}
+
+// Loop through each expense entry
+foreach ($expenses as $expense) {
+// Access the decrypted amount via the getter
+$decryptedAmount = $expense->amount;
+
+// Extract the year, month, and category_id from the expense
+$year = $expense->date->year;
+$month = $expense->date->month;
+$categoryId = $expense->category_id;
+
+// Create the unique key for the category/year/month
+$key = $year . '-' . $month . '-' . $categoryId;
+
+// If the key exists in the budget summary, add the amount to total_spent
+if (isset($budgetSummary[$key])) {
+$budgetSummary[$key]['total_spent'] += $decryptedAmount;
+}
+}
+
+// Calculate remaining balance for each category and month
+foreach ($budgetSummary as $key => $data) {
+$remainingBalance = $data['allocated_amount'] - $data['total_spent'];
+$budgetSummary[$key]['remaining_balance'] = number_format($remainingBalance, 2); // Format remaining balance
+$budgetSummary[$key]['total_spent'] = number_format($data['total_spent'], 2); // Format total spent
+$budgetSummary[$key]['allocated_amount'] = number_format($data['allocated_amount'], 2); // Format allocated amount
+}
+
+
+        return view('budgets.index', compact('budgetSummary'));
     }
 
     public function edit(Budget $budget)
