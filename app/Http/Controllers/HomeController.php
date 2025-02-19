@@ -185,15 +185,17 @@ $previousTotalBudget = Budget::where('user_id', $userId)
 });
 $budgetPercentageChange = $previousTotalBudget > 0 ? (($monthlyBudget - $previousTotalBudget) / $previousTotalBudget) * 100 : 0;
 
-$currentYear = now()->year;
+$monthsToShow = $request->input('filter', 12); // Default to last 12 months
+$start = now()->subMonths($monthsToShow)->startOfMonth();
+$end = now()->endOfMonth();
 
 $months = [];
 $monthlyBudgets = [];
 $monthlyExpenses = [];
 
 // Loop through the last 12 months
-for ($i = 11; $i >= 0; $i--) {
-    $date = $currentDate->copy()->subMonths($i);
+for ($i = $monthsToShow; $i > 0; $i--) {
+    $date = now()->subMonths($i)->startOfMonth();
     $year = $date->year;
     $month = $date->month;
     // Get total budget for the month

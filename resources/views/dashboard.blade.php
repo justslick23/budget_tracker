@@ -138,6 +138,12 @@
             <div class="card shadow">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">Expense vs Budget Overview</h6>
+                    <br>
+                    <select id="filter"  class = "form-control" onchange="updateChart()">
+    <option value="6">Last 6 Months</option>
+    <option value="12" selected>Last 12 Months</option>
+</select>
+
                 </div>
                 <div class="card-body">
                 <canvas id="budgetExpenseChart"></canvas>
@@ -331,6 +337,14 @@ const expenseChart = new Chart(ctxExpense, {
         }
     });
 });
+
+</script>
+
+<script>
+    function updateChart() {
+    let filter = document.getElementById("filter").value;
+    window.location.href = `?filter=${filter}`; // Reload with new filter
+}
 
 </script>
 
