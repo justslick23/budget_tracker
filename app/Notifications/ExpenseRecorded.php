@@ -22,10 +22,12 @@ class ExpenseRecorded extends Notification implements ShouldQueue
      * @param float $amount The amount of the expense.
      * @param string $category The category of the expense.
      */
-    public function __construct($amount, $category)
+    public function __construct($amount, $category, $date, $description)
     {
         $this->amount = $amount; // The amount spent
         $this->category = $category; // The category of the expense
+        $this->date = $date; // The amount spent
+        $this->description = $description; // The category of the expense
     }
 
     /**
