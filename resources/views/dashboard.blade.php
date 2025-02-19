@@ -140,7 +140,7 @@
                     <h6 class="m-0 font-weight-bold text-primary">Expense vs Budget Overview</h6>
                 </div>
                 <div class="card-body">
-                <canvas id="budgetChart" height="400" width="80"></canvas>
+                <canvas id="budgetExpenseChart"></canvas>
                 </div>
             </div>
         </div>
@@ -285,35 +285,49 @@ const expenseChart = new Chart(ctxExpense, {
 </script>
 
 <script>
-    var ctx = document.getElementById('budgetChart').getContext('2d');
-    var budgetChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: @json($months), // January to Current Month
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('budgetExpenseChart').getContext('2d');
+
+        const chartData = {
+            labels: @json($months),
             datasets: [
                 {
                     label: 'Total Budget',
                     data: @json($monthlyBudgets),
                     borderColor: 'blue',
-                    fill: false
+                    backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                    borderWidth: 2,
+                    fill: true
                 },
                 {
                     label: 'Total Expenses',
                     data: @json($monthlyExpenses),
                     borderColor: 'red',
-                    fill: false
+                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                    borderWidth: 2,
+                    fill: true
                 }
             ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true
+        };
+
+        new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
                 }
             }
-        }
+        });
     });
 </script>
 
