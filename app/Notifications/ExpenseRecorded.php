@@ -50,7 +50,7 @@ class ExpenseRecorded extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject('Expense Recorded') // Subject of the email
             ->greeting('Hello!') // Greeting line
-            ->line("You have recorded an expense of M{$this->amount} under the category '{$this->category->name}'.") // Body message
+            ->line("You have recorded an expense of M{$this->amount} under the category '{$this->category->name}', description: {$this->category->description}.") // Body message
             ->action('View Expenses', url('/expenses')) // Action button with URL
             ->line('Thank you for using our application!'); // Closing line
     }
