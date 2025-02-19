@@ -3,9 +3,9 @@
 return [
 
     /*
-    |--------------------------------------------------------------------------
+    |---------------------------------------------------------------------------
     | Default Mailer
-    |--------------------------------------------------------------------------
+    |---------------------------------------------------------------------------
     |
     | This option controls the default mailer that is used to send all email
     | messages unless another mailer is explicitly specified when sending
@@ -14,12 +14,12 @@ return [
     |
     */
 
-    'default' => env('MAIL_MAILER', 'log'),
+    'default' => env('MAIL_MAILER', 'smtp'),
 
     /*
-    |--------------------------------------------------------------------------
+    |---------------------------------------------------------------------------
     | Mailer Configurations
-    |--------------------------------------------------------------------------
+    |---------------------------------------------------------------------------
     |
     | Here you may configure all of the mailers used by your application plus
     | their respective settings. Several examples have been configured for
@@ -40,9 +40,9 @@ return [
         'smtp' => [
             'transport' => 'smtp',
             'url' => env('MAIL_URL'),
-            'host' => env('MAIL_HOST', '127.0.0.1'),
-            'port' => env('MAIL_PORT', 2525),
-            'encryption' => env('MAIL_ENCRYPTION', 'tls'),
+            'host' => env('MAIL_HOST', 'mail.tokelofoso.online'),
+            'port' => env('MAIL_PORT', 465),
+            'encryption' => env('MAIL_ENCRYPTION', 'ssl'),  // Adjust to 'ssl' for SSL encryption or 'starttls' for STARTTLS
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
             'timeout' => null,
@@ -55,10 +55,6 @@ return [
 
         'postmark' => [
             'transport' => 'postmark',
-            // 'message_stream_id' => env('POSTMARK_MESSAGE_STREAM_ID'),
-            // 'client' => [
-            //     'timeout' => 5,
-            // ],
         ],
 
         'resend' => [
@@ -98,9 +94,9 @@ return [
     ],
 
     /*
-    |--------------------------------------------------------------------------
+    |---------------------------------------------------------------------------
     | Global "From" Address
-    |--------------------------------------------------------------------------
+    |---------------------------------------------------------------------------
     |
     | You may wish for all emails sent by your application to be sent from
     | the same address. Here you may specify a name and address that is
@@ -109,8 +105,26 @@ return [
     */
 
     'from' => [
-        'address' => env('MAIL_FROM_ADDRESS', 'hello@example.com'),
+        'address' => env('MAIL_FROM_ADDRESS', 'hello@tokelofoso.online'),
         'name' => env('MAIL_FROM_NAME', 'Example'),
+    ],
+
+    /*
+    |---------------------------------------------------------------------------
+    | Encryption Options
+    |---------------------------------------------------------------------------
+    |
+    | You may configure options for SSL/TLS encryption here, including disabling
+    | verification for SSL certificates. However, disabling SSL verification is
+    | not recommended for production environments.
+    |
+    */
+
+    'options' => [
+        'ssl' => [
+            'verify_peer' => false, // Disable SSL certificate verification (use cautiously)
+            'verify_peer_name' => false, // Disable hostname verification (use cautiously)
+        ],
     ],
 
 ];
