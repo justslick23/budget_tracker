@@ -5,14 +5,7 @@
 @section('content')
 <div class="container-fluid">
     <h1 class="h3 mb-4 text-gray-800"><strong>Budget Tracker</strong> Dashboard</h1>
-<style>
-    #budgetRingChart, #expenseChart {
-    width: 100%;
- /* Adjust the max-width as per your requirement */
-    height: 400px !important;
-}
 
-</style>
 
     <div class="row">
         <!-- Total Income Card -->
