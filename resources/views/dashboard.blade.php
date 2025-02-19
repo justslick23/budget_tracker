@@ -285,50 +285,53 @@ const expenseChart = new Chart(ctxExpense, {
 </script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        const ctx = document.getElementById('budgetExpenseChart').getContext('2d');
+   document.addEventListener("DOMContentLoaded", function () {
+    const ctx = document.getElementById('budgetExpenseChart').getContext('2d');
 
-        const chartData = {
-            labels: @json($months),
-            datasets: [
-                {
-                    label: 'Total Budget',
-                    data: @json($monthlyBudgets),
-                    borderColor: 'blue',
-                    backgroundColor: 'rgba(0, 0, 255, 0.1)',
-                    borderWidth: 2,
-                    fill: true
-                },
-                {
-                    label: 'Total Expenses',
-                    data: @json($monthlyExpenses),
-                    borderColor: 'red',
-                    backgroundColor: 'rgba(255, 0, 0, 0.1)',
-                    borderWidth: 2,
-                    fill: true
+    const chartData = {
+        labels: @json($months),
+        datasets: [
+            {
+                label: 'Total Budget',
+                data: @json($monthlyBudgets),
+                borderColor: 'blue',
+                backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4 // Smooth curve effect
+            },
+            {
+                label: 'Total Expenses',
+                data: @json($monthlyExpenses),
+                borderColor: 'red',
+                backgroundColor: 'rgba(255, 0, 0, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4 // Smooth curve effect
+            }
+        ]
+    };
+
+    new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
                 }
-            ]
-        };
-
-        new Chart(ctx, {
-            type: 'line',
-            data: chartData,
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true
                 }
             }
-        });
+        }
     });
+});
+
 </script>
 
 @endsection
