@@ -185,11 +185,41 @@ $previousTotalBudget = Budget::where('user_id', $userId)
 });
 $budgetPercentageChange = $previousTotalBudget > 0 ? (($monthlyBudget - $previousTotalBudget) / $previousTotalBudget) * 100 : 0;
 
-      
+$currentYear = now()->year;
+
+// Initialize arrays for storing data
+$months = [];
+$monthlyBudgets = [];
+$monthlyExpenses = [];
+
+// Loop through each month from January to the current month
+for ($month = 1; $month <= now()->month; $month++) {
+    $startDate = Carbon::createFromDate($currentYear, $month, 1)->startOfMonth();
+    $endDate = Carbon::createFromDate($currentYear, $month, 1)->endOfMonth();
+
+    // Get total budget for the month
+    $totalBudget = Budget::where('user_id', $userId)
+        ->where('month', $month)->get()
+        ->sum(function ($budget) {
+            return $budget->amount;  // The getter will automatically decrypt the amount
+        });
+
+    // Get total expenses for the month
+    $totalExpense = Expense::where('user_id', $userId)
+        ->whereBetween('date', [$startDate, $endDate])->get()
+        ->sum(function ($expense) {
+            return $expense->amount;  // The getter will automatically decrypt the amount
+        });
+
+    // Store data in arrays
+    $months[] = $startDate->format('M'); // Month name
+    $monthlyBudgets[] = $totalBudget;
+    $monthlyExpenses[] = $totalExpense;
+} 
         return view('dashboard', compact(
             'totalIncome', 'totalExpenses', 'netSavings', 'monthlyBudget', 
             'incomePercentageChange', 'expensesPercentageChange', 
-            'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 'selectedMonth', 'budgetPercentageChange'
+            'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 'selectedMonth', 'budgetPercentageChange', 'months', 'monthlyBudgets', 'monthlyExpenses',
         ));
     }
 /**

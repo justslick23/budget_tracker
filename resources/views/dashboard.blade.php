@@ -133,6 +133,19 @@
         </div>
     </div>
 
+    <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Expense vs Budget Overview</h6>
+                </div>
+                <div class="card-body">
+                <canvas id="budgetChart" height="400" width="80"></canvas>
+                </div>
+            </div>
+        </div>
+</div>
+
     <!-- Recent Transactions -->
     <div class="row">
         <div class="col-12 mb-4">
@@ -268,6 +281,39 @@ const expenseChart = new Chart(ctxExpense, {
             "autoWidth": false, // Disable automatic column width calculation
             "responsive": true, // Make the table responsive on smaller screens
         });
+    });
+</script>
+
+<script>
+    var ctx = document.getElementById('budgetChart').getContext('2d');
+    var budgetChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: @json($months), // January to Current Month
+            datasets: [
+                {
+                    label: 'Total Budget',
+                    data: @json($monthlyBudgets),
+                    borderColor: 'blue',
+                    fill: false
+                },
+                {
+                    label: 'Total Expenses',
+                    data: @json($monthlyExpenses),
+                    borderColor: 'red',
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
     });
 </script>
 
