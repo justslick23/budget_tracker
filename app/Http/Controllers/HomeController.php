@@ -194,7 +194,7 @@ $monthlyBudgets = [];
 $monthlyExpenses = [];
 
 // Loop through the last 12 months
-for ($i = $monthsToShow; $i > 0; $i--) {
+for ($i = $monthsToShow; $i >= 0; $i--) {
     $date = now()->subMonths($i)->startOfMonth();
     $year = $date->year;
     $month = $date->month;
