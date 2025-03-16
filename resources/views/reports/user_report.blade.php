@@ -23,7 +23,7 @@
 <body>
     <h2>Monthly Budget & Expenses Report</h2>
     <p><strong>User:</strong> {{ $user->name }}</p>
-    <p><strong>Month:</strong> {{ \Carbon\Carbon::now()->format('F Y') }}</p>
+    <p><strong>Month:</strong> {{ \Carbon\Carbon::now()->subMonth()->format('F Y') }}</p>
 
     <h3>Budget</h3>
     <table>
