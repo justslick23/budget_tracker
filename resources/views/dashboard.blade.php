@@ -161,13 +161,13 @@
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
-                     
-                    <table class="table table-hover" id="transactionsTable">
+                    <table class="table table-hover" id="transactionsTable" style="width: 100%; table-layout: fixed;">
     <thead class="thead-light">
         <tr>
             <th>Description</th>
             <th>Transaction Type</th>
             <th>Amount</th>
+            <th>Category</th>
             <th>Date</th>
         </tr>
     </thead>
@@ -181,8 +181,7 @@
             <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
         </tr>
     @endforeach
-</tbody>
-
+    </tbody>
 </table>
 
 
@@ -262,16 +261,27 @@ const expenseChart = new Chart(ctxExpense, {
 
 
 </script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+
 <script>
     $(document).ready(function() {
         $('#transactionsTable').DataTable({
-            "paging": true, // Enable pagination
-            "searching": true, // Enable search
-            "ordering": true, // Enable sorting
-            "info": true, // Show info text
-            "lengthChange": true, // Enable the option to change page size
-            "autoWidth": false, // Disable automatic column width calculation
-            "responsive": true, // Make the table responsive on smaller screens
+            "paging": true, 
+            "searching": true, 
+            "ordering": true, 
+            "info": true, 
+            "lengthChange": true, 
+            "autoWidth": false, 
+            "responsive": true,
+            "columnDefs": [
+                { "width": "30%", "targets": 0 }, // Adjust column width
+                { "width": "15%", "targets": 1 },
+                { "width": "15%", "targets": 2 },
+                { "width": "20%", "targets": 3 },
+                { "width": "20%", "targets": 4 }
+            ]
         });
     });
 </script>
