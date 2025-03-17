@@ -175,10 +175,18 @@
     @foreach ($recentTransactions as $transaction)
         <tr>
             <td>{{ $transaction->description ?? $transaction->source }}</td>
-            <td>{{ $transaction->type }}</td>
-            <td>M{{ number_format(abs($transaction->amount), 2) }}</td>
-            <td>{{ $transaction->category->name ?? 'Uncategorized' }}</td>
-            <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
+            <td>
+    @if ($transaction->type == 'Expense')
+        <span class="badge badge-danger">Expense</span>
+    @else
+        <span class="badge badge-success">Income</span>
+    @endif
+</td>            <td>M{{ number_format(abs($transaction->amount), 2) }}</td>
+            <td>
+    <span class="badge badge-primary">
+        {{ $transaction->category->name ?? 'Uncategorized' }}
+    </span>
+</td>            <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
         </tr>
     @endforeach
     </tbody>
