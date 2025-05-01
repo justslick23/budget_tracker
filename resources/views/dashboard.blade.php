@@ -117,7 +117,7 @@
      <br><br>
 
      <div class="row">
-        <div class="col-lg-12 mb-4">
+        <div class="col-lg-6 mb-4">
             <div class="card shadow">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">Weekly Breakdown ({{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }})</h6>
@@ -144,6 +144,43 @@
                     </div>
                 </div>
             </div>
+        </div>
+
+
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h5 class="m-0 font-weight-bold text-primary">Top 5 Recurring Expenses</h6>
+                </div>
+                <div class="card-body">
+                    @if($recurringExpenses->isNotEmpty())
+                    <table class="table table-bordered table-striped">
+                        <thead class="thead-light">
+                            <tr>
+                                    <th>Description</th>
+                                    <th>Frequency</th>
+
+                                    <th>Total Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($recurringExpenses as $expense)
+                                    <tr>
+                                        <td>{{ $expense['description'] }}</td>
+                                        <td>{{ $expense['frequency'] }}</td>
+
+                                        <td>M{{ number_format($expense['total_amount'], 2) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @else
+                        <p>No recurring expenses found.</p>
+                    @endif
+                </div>
+            </div>
+            
+
         </div>
     </div>
     <br>
