@@ -218,10 +218,47 @@ for ($i = $monthsToShow; $i >= 0; $i--) {
     $monthlyBudgets[] = $totalBudget;
     $monthlyExpenses[] = $totalExpense;
 }
+// Calculate the number of weeks in the selected month
+$startOfMonth = $currentDate->copy()->startOfMonth();
+$endOfMonth = $currentDate->copy()->endOfMonth();
+
+// Difference in weeks (inclusive)
+$numberOfWeeks = ceil($startOfMonth->diffInDays($endOfMonth) / 7);
+
+// Avoid division by zero
+$averageWeeklySpent = $numberOfWeeks > 0 ? $totalExpenses / $numberOfWeeks : 0;
+
+$weeklyBreakdown = [];
+$currentWeekStart = $startDate->copy();
+$currentWeekEnd = $startDate->copy()->endOfWeek(); // Sunday
+
+while ($currentWeekStart->lte($endDate)) {
+    $weekExpenses = Expense::where('user_id', $userId)
+        ->whereBetween('date', [$currentWeekStart, $currentWeekEnd])
+        ->sum('amount');
+
+    $weeklyBreakdown[] = [
+        'week_start' => $currentWeekStart->copy()->format('Y-m-d'),
+        'week_end' => $currentWeekEnd->copy()->format('Y-m-d'),
+        'week_range' => $currentWeekStart->copy()->format('M d') . ' - ' . $currentWeekEnd->copy()->format('M d'),
+
+        'total_expense' => $weekExpenses
+    ];
+
+    // Move to next week
+    $currentWeekStart->addWeek()->startOfWeek();
+    $currentWeekEnd = $currentWeekStart->copy()->endOfWeek();
+
+    // Avoid going past the end of the month
+    if ($currentWeekEnd->gt($endDate)) {
+        $currentWeekEnd = $endDate->copy();
+    }
+}
+
         return view('dashboard', compact(
             'totalIncome', 'totalExpenses', 'netSavings', 'monthlyBudget', 
             'incomePercentageChange', 'expensesPercentageChange', 
-            'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 'selectedMonth', 'budgetPercentageChange', 'months', 'monthlyBudgets', 'monthlyExpenses',
+            'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 'selectedMonth', 'budgetPercentageChange', 'months', 'monthlyBudgets', 'monthlyExpenses', 'averageWeeklySpent', 'weeklyBreakdown'
         ));
     }
 /**

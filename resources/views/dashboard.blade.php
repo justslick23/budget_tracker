@@ -99,6 +99,9 @@
         </div>
     </div>
 
+
+
+
     <form action="{{ route('dashboard.index') }}" method="GET">
     <div class="form-group">
         <label for="month">Select Month:</label>
@@ -107,8 +110,43 @@
     <button type="submit" class="btn btn-primary">Filter</button>
 </form>
 
+    <!-- Weekly Breakdown Section -->
+ 
+
     <!-- Charts Section -->
      <br><br>
+
+     <div class="row">
+        <div class="col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-primary">Weekly Breakdown ({{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }})</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Week</th>
+                                    <th>Total Expenses (M)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($weeklyBreakdown as $week)
+                                    <tr>
+                                        <td>{{ $week['week_range'] }}</td>
+                                        <td>M{{ number_format($week['total_expense'], 2) }}</td>
+                                       
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
     <div class="row">
         <div class="col-lg-7 mb-4">
             <div class="card shadow">
