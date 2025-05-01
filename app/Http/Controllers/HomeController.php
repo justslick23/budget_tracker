@@ -41,7 +41,7 @@ class HomeController extends Controller
         
         // Parse the selected month into Carbon instances
         $currentMonthNumeric = Carbon::parse($selectedMonth)->format('m');
-
+    
      
         $currentDate = Carbon::parse($selectedMonth); // Parse the date for selected month
         $userId = auth()->id();
@@ -49,75 +49,69 @@ class HomeController extends Controller
         $endDate = $currentDate->copy()->endOfMonth()->endOfDay(); // End of the selected month
      
         $currentMonthNumeric = (int) $currentDate->format('m'); // Convert to integer explicitly
-
-       // Fetch the total income for the selected month
-
-    // Fetch recent expenses and income for the selected month
-    $recentExpenses = Expense::where('user_id', $userId)
-    ->whereBetween('date', [$startDate, $endDate])
-    ->orderBy('date', 'desc')
-    ->get()
-    ->map(function ($expense) {
-        $expense->type = 'Expense';
-        return $expense;
-    });
-
+        $currentYearNumeric = (int) $currentDate->format('Y'); // Add year for budget queries
     
-    $recentIncome = Income::where('user_id', $userId)
-    ->whereBetween('date', [$startDate, $endDate])
-    ->orderBy('date', 'desc')
-    ->get()
-    ->map(function ($income) {
-        $income->type = 'Income';
-        return $income;
-    });
-
-    $totalExpenses = $recentExpenses->sum('amount');
-    $totalIncome = $recentIncome->sum('amount');
-
+        // Fetch recent expenses and income for the selected month
+        $recentExpenses = Expense::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(function ($expense) {
+                $expense->type = 'Expense';
+                return $expense;
+            });
+    
         
-    $monthlyBudget = Budget::where('user_id', $userId)
-    ->where('month', $currentMonthNumeric)
-    ->get()
-    ->sum(function ($budget) {
-        return $budget->amount;  // The getter will automatically decrypt the amount
-    });
+        $recentIncome = Income::where('user_id', $userId)
+            ->whereBetween('date', [$startDate, $endDate])
+            ->orderBy('date', 'desc')
+            ->get()
+            ->map(function ($income) {
+                $income->type = 'Income';
+                return $income;
+            });
     
-   
+        $totalExpenses = $recentExpenses->sum('amount');
+        $totalIncome = $recentIncome->sum('amount');
+    
+        $monthlyBudget = Budget::where('user_id', $userId)
+            ->where('month', $currentMonthNumeric)
+            ->where('year', $currentYearNumeric) // Add year to the query
+            ->get()
+            ->sum(function ($budget) {
+                return $budget->amount;  // The getter will automatically decrypt the amount
+            });
+        
         // Fetch data for the previous month for comparison
         $previousStartDate = $currentDate->copy()->subMonth()->startOfMonth()->startOfDay();
         $previousEndDate = $currentDate->copy()->subMonth()->endOfMonth()->endOfDay();
+        $previousMonthNumeric = (int) $currentDate->copy()->subMonth()->format('m');
+        $previousYearNumeric = (int) $currentDate->copy()->subMonth()->format('Y');
     
         $previousTotalIncome = Income::where('user_id', $userId)
-            ->whereBetween('date', [$previousStartDate, $previousEndDate])->get()
-            ->sum(function ($income) {
-                return $income->amount;  // The getter will automatically decrypt the amount
-            });
+            ->whereBetween('date', [$previousStartDate, $previousEndDate])
+            ->get()
+            ->sum('amount'); // Simplified sum syntax
     
         $previousTotalExpenses = Expense::where('user_id', $userId)
-            ->whereBetween('date', [$previousStartDate, $previousEndDate])->get()
-              ->sum(function ($income) {
-                return $income->amount;  // The getter will automatically decrypt the amount
-            });
+            ->whereBetween('date', [$previousStartDate, $previousEndDate])
+            ->get()
+            ->sum('amount'); // Fixed - was using 'income' variable name
     
         // Calculate percentage change in income and expenses
         $incomePercentageChange = $previousTotalIncome > 0 ? (($totalIncome - $previousTotalIncome) / $previousTotalIncome) * 100 : 0;
         $expensesPercentageChange = $previousTotalExpenses > 0 ? (($totalExpenses - $previousTotalExpenses) / $previousTotalExpenses) * 100 : 0;
     
-    
-
-    
-    
         // Combine the recent transactions and sort by date
         $recentTransactions = $recentExpenses->merge($recentIncome)->sortByDesc('date');
     
-        $netSavings = $monthlyBudget - $totalExpenses;
+        $netSavings = $totalIncome - $totalExpenses; // Fixed - was using budget instead of income
     
         // Fetch all categories for comparison
         $allCategories = Category::all();
     
         // Group recent expenses by category and calculate total expenses and budgets
-        $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric) {
+        $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric, $currentYearNumeric) {
             // Get the category ID for this group
             $categoryId = $group->first()->category_id; 
         
@@ -135,9 +129,9 @@ class HomeController extends Controller
                     $budgetForCategory = Budget::where('user_id', $userId)
                         ->where('category_id', $categoryId)
                         ->where('month', $currentMonthNumeric)
+                        ->where('year', $currentYearNumeric) // Add year to query
                         ->first(); // Use first() to ensure you get the single record
-
-        
+    
                     return [
                         'name' => $category->name, // Category name
                         'expense' => $totalExpense, // Total expenses for the category
@@ -151,7 +145,6 @@ class HomeController extends Controller
         // Prepare final data by including all categories, even those with no expenses
         $finalData = $allCategories->map(function ($category) use ($groupedExpenses) {
             $expenseData = $groupedExpenses->firstWhere('name', $category->name);
-
     
             return [
                 'name' => $category->name,
@@ -167,94 +160,113 @@ class HomeController extends Controller
         $labels = $groupedExpenses->pluck('name');
         $data = $groupedExpenses->pluck('expense');
         $budgetsData = $groupedExpenses->pluck('budget'); // Budgets for each category
-
-        // Total Income Percentage Change
-       
-$incomePercentageChange = $previousTotalIncome > 0 ? (($totalIncome - $previousTotalIncome) / $previousTotalIncome) * 100 : 0;
-
-// Total Expenses Percentage Change
-
-$expensesPercentageChange = $previousTotalExpenses > 0 ? (($totalExpenses - $previousTotalExpenses) / $previousTotalExpenses) * 100 : 0;
-
-$previousMonthNumeric = $currentDate->copy()->subMonth()->month;
-// Monthly Budget Percentage Change
-$previousTotalBudget = Budget::where('user_id', $userId)
-->where('month', $previousMonthNumeric)->get() // Set the previous month
-->sum(function ($budget) {
-    return $budget->amount;  // The getter will automatically decrypt the amount
-});
-$budgetPercentageChange = $previousTotalBudget > 0 ? (($monthlyBudget - $previousTotalBudget) / $previousTotalBudget) * 100 : 0;
-
-$monthsToShow = $request->input('filter', 12); // Default to last 12 months
-$start = now()->subMonths($monthsToShow)->startOfMonth();
-$end = now()->endOfMonth();
-
-$months = [];
-$monthlyBudgets = [];
-$monthlyExpenses = [];
-
-// Loop through the last 12 months
-for ($i = $monthsToShow; $i >= 0; $i--) {
-    $date = now()->subMonths($i)->startOfMonth();
-    $year = $date->year;
-    $month = $date->month;
-    // Get total budget for the month
-    $totalBudget = Budget::where('user_id', $userId)
-    ->where('year', $year)
-    ->where('month', $month)->get()
-        ->sum(function ($budget) {
-            return $budget->amount;  // The getter will automatically decrypt the amount
-        });
-
-        $totalExpense = Expense::where('user_id', $userId)
-        ->whereYear('date', $year)
-        ->whereMonth('date', $month)->get()
-        ->sum(function ($expense) {
-            return $expense->amount;  // The getter will automatically decrypt the amount
-        });
-
-    // Store data in arrays
-    $months[] = $date->format('M Y'); // Example: "Feb 2024"
-    $monthlyBudgets[] = $totalBudget;
-    $monthlyExpenses[] = $totalExpense;
-}
-// Calculate the number of weeks in the selected month
-$startOfMonth = $currentDate->copy()->startOfMonth();
-$endOfMonth = $currentDate->copy()->endOfMonth();
-
-// Difference in weeks (inclusive)
-$numberOfWeeks = ceil($startOfMonth->diffInDays($endOfMonth) / 7);
-
-// Avoid division by zero
-$averageWeeklySpent = $numberOfWeeks > 0 ? $totalExpenses / $numberOfWeeks : 0;
-
-$weeklyBreakdown = [];
-$currentWeekStart = $startDate->copy();
-$currentWeekEnd = $startDate->copy()->endOfWeek(); // Sunday
-
-while ($currentWeekStart->lte($endDate)) {
-    $weekExpenses = Expense::where('user_id', $userId)
-        ->whereBetween('date', [$currentWeekStart, $currentWeekEnd])
-        ->sum('amount');
-
-    $weeklyBreakdown[] = [
-        'week_start' => $currentWeekStart->copy()->format('Y-m-d'),
-        'week_end' => $currentWeekEnd->copy()->format('Y-m-d'),
-        'week_range' => $currentWeekStart->copy()->format('M d') . ' - ' . $currentWeekEnd->copy()->format('M d'),
-
-        'total_expense' => $weekExpenses
-    ];
-
-    // Move to next week
-    $currentWeekStart->addWeek()->startOfWeek();
-    $currentWeekEnd = $currentWeekStart->copy()->endOfWeek();
-
-    // Avoid going past the end of the month
-    if ($currentWeekEnd->gt($endDate)) {
-        $currentWeekEnd = $endDate->copy();
-    }
-}
-
+    
+        // Monthly Budget Percentage Change
+        $previousTotalBudget = Budget::where('user_id', $userId)
+            ->where('month', $previousMonthNumeric)
+            ->where('year', $previousYearNumeric) // Add year to query
+            ->get()
+            ->sum('amount'); // Simplified sum syntax
+            
+        $budgetPercentageChange = $previousTotalBudget > 0 ? (($monthlyBudget - $previousTotalBudget) / $previousTotalBudget) * 100 : 0;
+    
+        $monthsToShow = $request->input('filter', 12); // Default to last 12 months
+        $start = now()->subMonths($monthsToShow)->startOfMonth();
+        $end = now()->endOfMonth();
+    
+        $months = [];
+        $monthlyBudgets = [];
+        $monthlyExpenses = [];
+    
+        // Loop through the last N months
+        for ($i = $monthsToShow; $i >= 0; $i--) {
+            $date = now()->subMonths($i)->startOfMonth();
+            $year = $date->year;
+            $month = $date->month;
+            
+            // Get total budget for the month
+            $totalBudget = Budget::where('user_id', $userId)
+                ->where('year', $year)
+                ->where('month', $month)
+                ->get()
+                ->sum('amount'); // Simplified sum syntax
+    
+            $totalExpense = Expense::where('user_id', $userId)
+                ->whereYear('date', $year)
+                ->whereMonth('date', $month)
+                ->get()
+                ->sum('amount'); // Simplified sum syntax
+    
+            // Store data in arrays
+            $months[] = $date->format('M Y'); // Example: "Feb 2024"
+            $monthlyBudgets[] = $totalBudget;
+            $monthlyExpenses[] = $totalExpense;
+        }
+        
+        // Calculate the number of weeks in the selected month
+        $startOfMonth = $currentDate->copy()->startOfMonth();
+        $endOfMonth = $currentDate->copy()->endOfMonth();
+    
+        // Difference in weeks (inclusive)
+        $numberOfWeeks = ceil($startOfMonth->diffInDays($endOfMonth) / 7);
+    
+        // Avoid division by zero
+        $averageWeeklySpent = $numberOfWeeks > 0 ? $totalExpenses / $numberOfWeeks : 0;
+    
+        $weeklyBreakdown = [];
+        
+        // Start from the first day of the month
+        $currentWeekStart = $startDate->copy()->startOfWeek();
+        
+        // If the start of the week is before the start of the month, adjust it
+        if ($currentWeekStart->lt($startDate)) {
+            $currentWeekStart = $startDate->copy();
+        }
+        
+        // Calculate the end of the first week
+        $currentWeekEnd = $currentWeekStart->copy()->endOfWeek();
+        
+        // If the end of the week is after the end of the month, adjust it
+        if ($currentWeekEnd->gt($endDate)) {
+            $currentWeekEnd = $endDate->copy();
+        }
+    
+        // Loop through each week in the month
+        while ($currentWeekStart->lte($endDate)) {
+            // Ensure we don't go beyond the month boundaries
+            $weekStart = max($currentWeekStart, $startDate);
+            $weekEnd = min($currentWeekEnd, $endDate);
+    
+            // Get expenses for this week
+            $weekExpenses = Expense::where('user_id', $userId)
+                ->whereBetween('date', [
+                    $weekStart->copy()->startOfDay(), 
+                    $weekEnd->copy()->endOfDay()
+                ])
+                ->get() // Make sure to get the data first
+                ->sum('amount');
+    
+            // Add to breakdown array
+            $weeklyBreakdown[] = [
+                'week_start' => $weekStart->format('Y-m-d'),
+                'week_end' => $weekEnd->format('Y-m-d'),
+                'week_range' => $weekStart->format('M d') . ' - ' . $weekEnd->format('M d'),
+                'total_expense' => $weekExpenses
+            ];
+    
+            // Move to the next week - CORRECTED
+            $currentWeekStart = $currentWeekEnd->copy()->addDay();
+            $currentWeekEnd = $currentWeekStart->copy()->addDays(6); // Go 6 days ahead (for a 7-day week)
+    
+            // Check if we're past the end of the month
+            if ($currentWeekStart->gt($endDate)) {
+                break; // Exit the loop if we've gone past the month
+            }
+        }
+    
+        // Remove the debugging line
+        // dd($weeklyBreakdown);
+    
         return view('dashboard', compact(
             'totalIncome', 'totalExpenses', 'netSavings', 'monthlyBudget', 
             'incomePercentageChange', 'expensesPercentageChange', 
