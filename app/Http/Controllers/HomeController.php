@@ -45,8 +45,9 @@ class HomeController extends Controller
      
         $currentDate = Carbon::parse($selectedMonth); // Parse the date for selected month
         $userId = auth()->id();
-        $startDate = $currentDate->copy()->startOfMonth()->startOfDay(); // Start of the selected month
-        $endDate = $currentDate->copy()->endOfMonth()->endOfDay(); // End of the selected month
+      // Define custom month period (27th of previous month to 26th of current month)
+        $startDate = $currentDate->copy()->subMonth()->setDay(27)->startOfDay();
+        $endDate = $currentDate->copy()->setDay(26)->endOfDay();
      
         $currentMonthNumeric = (int) $currentDate->format('m'); // Convert to integer explicitly
         $currentYearNumeric = (int) $currentDate->format('Y'); // Add year for budget queries
@@ -83,8 +84,8 @@ class HomeController extends Controller
             });
         
         // Fetch data for the previous month for comparison
-        $previousStartDate = $currentDate->copy()->subMonth()->startOfMonth()->startOfDay();
-        $previousEndDate = $currentDate->copy()->subMonth()->endOfMonth()->endOfDay();
+        $previousStartDate = $currentDate->copy()->subMonths(2)->setDay(27)->startOfDay();
+        $previousEndDate = $currentDate->copy()->subMonth()->setDay(26)->endOfDay();
         $previousMonthNumeric = (int) $currentDate->copy()->subMonth()->format('m');
         $previousYearNumeric = (int) $currentDate->copy()->subMonth()->format('Y');
     
