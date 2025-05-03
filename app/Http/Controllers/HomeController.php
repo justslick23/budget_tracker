@@ -140,7 +140,7 @@ class HomeController extends Controller
         
         // Pass the custom period information to the view
         return view('dashboard', compact(
-            'totalIncome', 'totalExpenses', 'netSavings', 'monthlyBudget',
+            'totalIncome', 'totalExpenses', 'monthlyBudget',
             'incomePercentageChange', 'expensesPercentageChange',
             'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 
             'selectedMonth', 'budgetPercentageChange', 'months', 'monthlyBudgets', 
