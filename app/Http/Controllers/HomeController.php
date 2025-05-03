@@ -84,8 +84,8 @@ class HomeController extends Controller
             });
         
         // Fetch data for the previous month for comparison
-        $previousStartDate = $currentDate->copy()->subMonths(2)->setDay(27)->startOfDay();
-        $previousEndDate = $currentDate->copy()->subMonth()->setDay(26)->endOfDay();
+        $previousStartDate = $currentDate->copy()->subMonths(2)->setDay(26)->startOfDay();
+        $previousEndDate = $currentDate->copy()->subMonth()->setDay(25)->endOfDay();
         $previousMonthNumeric = (int) $currentDate->copy()->subMonth()->format('m');
         $previousYearNumeric = (int) $currentDate->copy()->subMonth()->format('Y');
     
