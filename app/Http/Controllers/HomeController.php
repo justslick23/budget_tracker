@@ -265,25 +265,21 @@ class HomeController extends Controller
             }
         }
     
-        $recurringExpenses = $recentExpenses
+        $topExpenses = $recentExpenses
         ->groupBy('description')
-        ->filter(function ($group) {
-            return $group->count() > 1; // More than one expense with same description
-        })
-        ->map(function ($group) {
-            return [
-                'description' => $group->first()->description,
-                'frequency' => $group->count(),
-                'total_amount' => $group->sum('amount')
-            ];
-        })
+        ->map(fn($group) => [
+            'description'   => $group->first()->description,
+            'frequency'     => $group->count(),
+            'total_amount'  => $group->sum('amount'),
+        ])
         ->sortByDesc('total_amount')
-        ->take(5); // Top 5 recurring expenses
+        ->take(5);
+    
     
         return view('dashboard', compact(
             'totalIncome', 'totalExpenses', 'netSavings', 'monthlyBudget', 
             'incomePercentageChange', 'expensesPercentageChange', 
-            'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 'selectedMonth', 'budgetPercentageChange', 'months', 'monthlyBudgets', 'monthlyExpenses', 'averageWeeklySpent', 'weeklyBreakdown', 'recurringExpenses'
+            'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 'selectedMonth', 'budgetPercentageChange', 'months', 'monthlyBudgets', 'monthlyExpenses', 'averageWeeklySpent', 'weeklyBreakdown', 'topExpenses'
         ));
     }
 /**
