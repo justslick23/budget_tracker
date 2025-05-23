@@ -16,7 +16,7 @@
 
         /* Body Styles */
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-family: 'Roboto', sans-serif; /* Use a clean, modern font */
             line-height: 1.6;
             color: #2d3748; /* Dark text for a professional look */
             background-color: #f8fafc; /* Very light background */
