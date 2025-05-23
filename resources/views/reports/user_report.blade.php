@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <title>Monthly Report - {{ $user->name }}</title>
     <style>
@@ -89,7 +89,7 @@
         /* Section Titles */
         .section-title {
             font-size: 1.8rem;
-            font-weight: 600;
+            font-weight: 600; /* Semi-bold */
             margin-bottom: 20px;
             color: #2d3748; /* Dark text for titles */
             display: flex;
@@ -124,7 +124,7 @@
         th {
             padding: 16px 20px;
             text-align: left;
-            font-weight: 600;
+            font-weight: 600; /* Semi-bold */
             color: #4a5568; /* Darker grey for header text */
             font-size: 0.9rem;
             text-transform: uppercase;
@@ -142,18 +142,18 @@
 
         /* Amount Styling */
         .amount {
-            font-weight: 600;
+            font-weight: 600; /* Semi-bold */
             color: #2d3748;
         }
 
         .budget-amount {
             color: #38a169; /* Green for budget */
-            font-weight: 700;
+            font-weight: 700; /* Bold */
         }
 
         .expense-amount {
             color: #e53e3e; /* Red for expenses */
-            font-weight: 700;
+            font-weight: 700; /* Bold */
         }
 
         /* Summary Table Specifics */
@@ -172,7 +172,7 @@
 
         .summary-table td {
             font-size: 1.1rem;
-            font-weight: 700;
+            font-weight: 700; /* Bold */
             padding: 20px;
             color: #2d3748; /* Dark text for summary values */
         }
@@ -202,7 +202,7 @@
             padding: 4px 10px;
             border-radius: 16px;
             font-size: 0.8rem;
-            font-weight: 500;
+            font-weight: 500; /* Medium */
         }
 
         /* Description Text */
@@ -245,7 +245,7 @@
 
         .stat-value {
             font-size: 2.1rem; /* Large value font size */
-            font-weight: 700;
+            font-weight: 700; /* Bold */
             margin-bottom: 8px;
             color: #2d3748; /* Dark text for values */
         }
@@ -268,7 +268,7 @@
 
         .chart-title {
             font-size: 1.5rem;
-            font-weight: 600;
+            font-weight: 600; /* Semi-bold */
             color: #2d3748;
             margin-bottom: 15px;
             text-align: center;
@@ -293,7 +293,7 @@
             flex-shrink: 0;
             text-align: right;
             padding-right: 10px;
-            font-weight: 500;
+            font-weight: 500; /* Medium */
         }
 
         .bar-wrapper {
@@ -314,7 +314,7 @@
             justify-content: flex-end;
             padding-right: 5px;
             color: white;
-            font-weight: 600;
+            font-weight: 600; /* Semi-bold */
             font-size: 0.8rem;
             white-space: nowrap;
         }
