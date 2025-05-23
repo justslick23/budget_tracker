@@ -19,47 +19,45 @@ class GenerateMonthlyReport extends Command
 
     public function handle()
     {
-        $users = User::all();  // Fetch all users
+        $users = User::all();
     
         if ($users->isEmpty()) {
             $this->info("No users found.");
             return;
         }
     
-        // Get previous month
-        $previousMonthDate = Carbon::now()->subMonth();
-        $previousMonth = $previousMonthDate->format('Y-m');
+        // Define custom period: 27th of previous month to 26th of current month
+        $startDate = Carbon::now()->subMonth()->startOfMonth()->addDays(26); // 27th previous month
+        $endDate = Carbon::now()->startOfMonth()->addDays(25); // 26th this month
     
         foreach ($users as $user) {
             $expenses = Expense::where('user_id', $user->id)
-                ->where('date', 'like', "$previousMonth%")
+                ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
                 ->get();
     
             $budgets = Budget::where('user_id', $user->id)
-                ->where('month', $previousMonthDate->month)
+                ->whereBetween('month', [$startDate->month, $endDate->month]) // optional: refine if needed
                 ->get();
     
             if ($expenses->isEmpty() && $budgets->isEmpty()) {
-                $this->info("No data found for {$user->email} for {$previousMonthDate->format('F Y')}.");
-                continue; // Skip the current user and move to the next one
+                $this->info("No data found for {$user->email} from {$startDate->format('d M')} to {$endDate->format('d M')}.");
+                continue;
             }
     
-            // Calculate totals
-            $totalExpenses = $expenses->sum(fn ($expense) => ($expense->amount));  // Assuming amount is encrypted
-            $totalBudget = $budgets->sum(fn ($budget) => ($budget->amount));  // Assuming amount is encrypted
+            $totalExpenses = $expenses->sum(fn($expense) => $expense->amount);
+            $totalBudget = $budgets->sum(fn($budget) => $budget->amount);
     
-            // Generate PDF
             $pdf = Pdf::loadView('reports.user_report', compact('user', 'expenses', 'budgets', 'totalExpenses', 'totalBudget'));
-            $fileName = "BudgetTrackerReport_{$user->name}_{$previousMonth}.pdf";
+            $fileName = "BudgetTrackerReport_{$user->name}_{$startDate->format('Ymd')}_to_{$endDate->format('Ymd')}.pdf";
             $pdfPath = storage_path("app/public/reports/$fileName");
     
             $pdf->save($pdfPath);
     
-            // Send email
             Mail::to($user->email)->send(new UserReportMail($user, $pdfPath));
     
-            $this->info("Report sent to {$user->email} for {$previousMonthDate->format('F Y')}");
+            $this->info("Report sent to {$user->email} for period {$startDate->format('d M')} to {$endDate->format('d M')}.");
         }
     }
+    
     
 }
