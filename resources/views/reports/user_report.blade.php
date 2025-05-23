@@ -30,23 +30,16 @@
         }
 
         .header {
-            background: linear-gradient(135deg, #f68c34 0%, #eb3300 100%); /* Warm, vibrant gradient */
+            background-color: #eb3300; /* Solid color matching one of your gradient ends */
             padding: 45px;
             text-align: center;
             color: white;
             position: relative;
-            border-bottom: 8px solid rgba(0, 0, 0, 0.2); /* Stronger bottom border */
+            border-bottom: 8px solid rgba(0, 0, 0, 0.2);
         }
 
         .header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1.5" fill="white" opacity="0.15"/><circle cx="75" cy="75" r="1.5" fill="white" opacity="0.15"/><circle cx="25" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="25" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-            opacity: 0.3; /* More prominent grain */
+            content: none; /* Explicitly remove any potential fallback */
         }
 
         .header h1 {
