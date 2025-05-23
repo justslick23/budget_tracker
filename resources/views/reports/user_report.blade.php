@@ -257,6 +257,94 @@
             letter-spacing: 0.5px;
         }
 
+        /* Chart Specific Styles */
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            margin-bottom: 40px;
+        }
+
+        .chart-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .bar-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .bar-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #4a5568;
+        }
+
+        .bar-label {
+            width: 120px; /* Fixed width for labels */
+            flex-shrink: 0;
+            text-align: right;
+            padding-right: 10px;
+            font-weight: 500;
+        }
+
+        .bar-wrapper {
+            flex-grow: 1;
+            height: 25px;
+            background-color: #e2e8f0; /* Base color for the bar track */
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bar {
+            height: 100%;
+            border-radius: 5px;
+            background-color: #3182ce; /* Default bar color */
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 5px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        /* Chart bar colors */
+        .bar.color-1 { background-color: #3182ce; } /* Blue */
+        .bar.color-2 { background-color: #38a169; } /* Green */
+        .bar.color-3 { background-color: #e53e3e; } /* Red */
+        .bar.color-4 { background-color: #dd6b20; } /* Orange */
+        .bar.color-5 { background-color: #6b46c1; } /* Purple */
+        .bar.color-6 { background-color: #d69e2e; } /* Yellow-Orange */
+
+
+        .chart-placeholder {
+            width: 100%;
+            height: 250px; /* Fixed height for placeholder */
+            background-color: #e2e8f0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #a0aec0;
+            font-style: italic;
+            font-size: 1.1rem;
+            text-align: center;
+            line-height: 1.4;
+            border: 1px dashed #cbd5e1;
+            overflow: hidden; /* Ensure text doesn't overflow */
+        }
+
         /* Footer Section */
         .footer {
             background: #e2e8f0; /* Light grey footer background */
@@ -392,6 +480,27 @@
                 color: #64748b !important;
                 border-top-color: #e2e8f0 !important;
             }
+
+            .chart-container {
+                box-shadow: none;
+                border: 1px solid #e2e8f0;
+                page-break-inside: avoid; /* Keep charts on one page */
+            }
+
+            .bar-chart {
+                /* Ensure bars print correctly */
+                -webkit-print-color-adjust: exact;
+            }
+
+            .bar {
+                -webkit-print-color-adjust: exact;
+            }
+
+            .chart-placeholder {
+                background-color: #f8fafc !important;
+                border-color: #cbd5e1 !important;
+                color: #a0aec0 !important;
+            }
         }
     </style>
 </head>
@@ -424,7 +533,35 @@
             </div>
 
             <div class="section">
-                <h3 class="section-title">Budget Allocation</h3>
+                <h3 class="section-title">Budget Distribution Overview</h3>
+                <div class="chart-container">
+                    <div class="bar-chart">
+                        @php
+                            $totalBudgetSum = $budgets->sum('amount');
+                            $colors = ['color-1', 'color-2', 'color-3', 'color-4', 'color-5', 'color-6'];
+                            $colorIndex = 0;
+                        @endphp
+                        @foreach($budgets as $budget)
+                            @php
+                                $percentage = ($totalBudgetSum > 0) ? ($budget->amount / $totalBudgetSum) * 100 : 0;
+                                $current_color_class = $colors[$colorIndex % count($colors)];
+                                $colorIndex++;
+                            @endphp
+                            <div class="bar-item">
+                                <div class="bar-label">{{ $budget->category->name }}:</div>
+                                <div class="bar-wrapper">
+                                    <div class="bar {{ $current_color_class }}" style="width: {{ round($percentage) }}%;">
+                                        {{ round($percentage) }}%
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Budget Allocation Details</h3>
                 <table>
                     <thead>
                         <tr>
@@ -467,6 +604,17 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            <div class="section">
+                <h3 class="section-title">Monthly Expense Trend</h3>
+                <div class="chart-container">
+                    <div class="chart-placeholder">
+                        [Placeholder for Monthly Expense Trend Chart]
+                        <br>
+                        (e.g., Line Graph showing expenses over time)
+                    </div>
+                </div>
             </div>
 
             <div class="section">
