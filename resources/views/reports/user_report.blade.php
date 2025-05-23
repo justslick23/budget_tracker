@@ -16,7 +16,7 @@
 
         /* Body Styles */
         body {
-            font-family: 'Roboto', sans-serif; /* Use a clean, modern font */
+            font-family: 'Roboto', sans-serif !important; /* Use a clean, modern font */
             line-height: 1.6;
             color: #2d3748; /* Dark text for a professional look */
             background-color: #f8fafc; /* Very light background */
@@ -606,16 +606,7 @@
                 </table>
             </div>
 
-            <div class="section">
-                <h3 class="section-title">Monthly Expense Trend</h3>
-                <div class="chart-container">
-                    <div class="chart-placeholder">
-                        [Placeholder for Monthly Expense Trend Chart]
-                        <br>
-                        (e.g., Line Graph showing expenses over time)
-                    </div>
-                </div>
-            </div>
+     
 
             <div class="section">
                 <h3 class="section-title">Financial Summary</h3>
