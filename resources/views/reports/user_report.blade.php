@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monthly Report - {{ $user->name }}</title>
     <style>
         * {
@@ -15,27 +14,28 @@
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
-            color: #2d3748;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #e2e8f0; /* Lighter text for dark background */
+            background-color: #1a202c; /* Dark charcoal */
             min-height: 100vh;
-            padding: 20px;
+            padding: 25px;
         }
 
         .report-container {
             max-width: 800px;
             margin: 0 auto;
-            background: white;
+            background: #2d3748; /* Darker main container */
             border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3); /* Stronger shadow for static view */
         }
 
         .header {
-            background: linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%);
-            padding: 40px;
+            background: linear-gradient(135deg, #f68c34 0%, #eb3300 100%); /* Warm, vibrant gradient */
+            padding: 45px;
             text-align: center;
             color: white;
             position: relative;
+            border-bottom: 8px solid rgba(0, 0, 0, 0.2); /* Stronger bottom border */
         }
 
         .header::before {
@@ -45,33 +45,36 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="25" cy="75" r="0.5" fill="white" opacity="0.1"/><circle cx="75" cy="25" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="#f5f5f5"'/>
-        ');
-            opacity: 0.1;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1.5" fill="white" opacity="0.15"/><circle cx="75" cy="75" r="1.5" fill="white" opacity="0.15"/><circle cx="25" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="25" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3; /* More prominent grain */
         }
 
         .header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
+            font-size: 2.8rem;
+            font-weight: 800; /* Extra bold */
+            margin-bottom: 12px;
             position: relative;
             z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
         }
 
         .user-info {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 20px;
+            margin-top: 25px;
             position: relative;
             z-index: 1;
+            font-size: 1rem;
         }
 
         .user-info div {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 12px 20px;
-            border-radius: 25px;
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.1); /* Very subtle background */
+            padding: 10px 22px;
+            border-radius: 30px;
+            /* backdrop-filter will behave differently across PDF renderers,
+               but the background color provides a good fallback */
+            border: 1px solid rgba(255, 255, 255, 0.15); /* Light border */
         }
 
         .content {
@@ -79,216 +82,305 @@
         }
 
         .section {
-            margin-bottom: 40px;
+            margin-bottom: 45px;
         }
 
         .section-title {
-            font-size: 1.8rem;
-            font-weight: 600;
-            margin-bottom: 20px;
-            color: #2d3748;
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 25px;
+            color: #edf2f7; /* Lighter title color */
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .section-title::before {
             content: '';
-            width: 4px;
-            height: 30px;
-            background: linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%);
-            border-radius: 2px;
+            width: 5px;
+            height: 35px;
+            background: linear-gradient(135deg, #f68c34 0%, #eb3300 100%); /* Matching header gradient */
+            border-radius: 3px;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            background: white;
+            background: #2d3748; /* Darker table background */
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            margin-bottom: 25px;
         }
 
         thead {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            background: #4a5568; /* Darker header */
         }
 
         th {
-            padding: 18px 20px;
+            padding: 20px 25px;
             text-align: left;
-            font-weight: 600;
-            color: #2d3748;
-            font-size: 0.95rem;
+            font-weight: 700;
+            color: #edf2f7; /* White text */
+            font-size: 1rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 2px solid #e2e8f0;
+            letter-spacing: 0.8px;
+            border-bottom: 3px solid #2d3748; /* Thicker border */
         }
 
         td {
-            padding: 16px 20px;
-            border-bottom: 1px solid #f1f5f9;
-            color: #4a5568;
+            padding: 18px 25px;
+            border-bottom: 1px solid #4a5568; /* Darker border */
+            color: #cbd5e1; /* Lighter text */
         }
 
-        tbody tr {
-            transition: all 0.2s ease;
-        }
-
-        tbody tr:hover {
-            background-color: #f8fafc;
-            transform: translateY(-1px);
-        }
-
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
+        /* No specific tbody tr:hover as it's for static PDF */
 
         .amount {
-            font-weight: 600;
-            color: #2d3748;
+            font-weight: 700;
+            color: #edf2f7;
         }
 
         .budget-amount {
-            color: #6a82fb;
+            color: #38a169; /* Green for budget */
             font-weight: 700;
         }
 
         .expense-amount {
-            color: #fc5c7d;
+            color: #e53e3e; /* Red for expenses */
             font-weight: 700;
         }
 
         .summary-table {
-            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 50%, #f8fafc 100%);
-            border: 2px solid #e2e8f0;
+            background: #1a202c; /* Even darker for summary */
+            border: 2px solid #4a5568; /* Stronger border */
         }
 
         .summary-table th {
-            background: linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%);
+            background: linear-gradient(135deg, #f68c34 0%, #eb3300 100%); /* Matching header gradient */
             color: white;
-            font-size: 1rem;
+            font-size: 1.1rem;
+            padding: 22px;
+            border-bottom: none;
         }
 
         .summary-table td {
-            font-size: 1.1rem;
-            font-weight: 700;
-            padding: 20px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            padding: 25px;
+            color: white;
+            border-bottom: none;
         }
 
         .total-budget {
-            color: #6a82fb;
+            color: #48bb78; /* Brighter green */
         }
 
         .total-expenses {
-            color: #fc5c7d;
+            color: #f56565; /* Brighter red */
         }
 
         .remaining-balance {
-            color: #10b981;
+            color: #68d391; /* Lighter green for positive */
         }
 
         .remaining-balance.negative {
-            color: #ef4444;
+            color: #fc8181; /* Lighter red for negative */
         }
 
         .category-tag {
-            display: inline-block;
-            background: linear-gradient(135deg, #6a82fb 0%, #fc5c7d 100%);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 500;
+            display: inline-block; /* Ensure it behaves well in tables */
+            background: #4a5568; /* Dark grey tag */
+            color: #cbd5e1; /* Lighter text */
+            padding: 5px 14px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid #64748b;
         }
 
         .description {
-            color: #64748b;
+            color: #a0aec0; /* Softer text */
             font-style: italic;
         }
 
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: 25px;
+            margin-bottom: 40px;
         }
 
         .stat-card {
-            background: white;
-            padding: 25px;
-            border-radius: 12px;
-            text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            border-left: 4px solid;
-            transition: transform 0.2s ease;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-2px);
+            background: #2d3748; /* Darker card background */
+            padding: 30px;
+            border-radius: 14px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+            border-left: 5px solid; /* Thicker border */
+            /* No transform or transition for static PDF */
         }
 
         .stat-card.budget {
-            border-left-color: #6a82fb;
+            border-left-color: #48bb78; /* Green */
         }
 
         .stat-card.expenses {
-            border-left-color: #fc5c7d;
+            border-left-color: #e53e3e; /* Red */
         }
 
         .stat-card.balance {
-            border-left-color: #10b981;
+            border-left-color: #68d391; /* Lighter Green */
         }
 
         .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 8px;
+            font-size: 2.3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: white;
         }
 
         .stat-label {
-            color: #64748b;
+            color: #a0aec0;
             text-transform: uppercase;
-            font-size: 0.85rem;
-            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+            letter-spacing: 0.7px;
         }
 
         .footer {
-            background: #f8fafc;
-            padding: 30px 40px;
+            background: #1a202c; /* Dark footer */
+            padding: 35px 40px;
             text-align: center;
-            color: #64748b;
-            border-top: 1px solid #e2e8f0;
+            color: #a0aec0;
+            border-top: 2px solid #4a5568; /* Stronger border */
+            font-size: 0.95rem;
         }
 
-        .footer p {
-            margin-bottom: 5px;
-        }
-
+        /* Print-specific adjustments */
         @media print {
             body {
-                background: white;
+                background: white; /* White background for print */
                 padding: 0;
+                color: #2d3748; /* Dark text for print */
             }
-            
+
             .report-container {
-                box-shadow: none;
+                box-shadow: none; /* No shadows in print */
                 border-radius: 0;
+                border: 1px solid #e2e8f0; /* Light border for structure */
             }
-            
-            .stat-card:hover,
-            tbody tr:hover {
-                transform: none;
-                background: transparent;
+
+            .header {
+                background: linear-gradient(135deg, #f68c34 0%, #eb3300 100%) !important; /* Ensure gradient prints */
+                -webkit-print-color-adjust: exact; /* Crucial for background colors to print */
+                color: white !important;
+                border-bottom-color: rgba(0, 0, 0, 0.1) !important;
+            }
+
+            .header::before {
+                background: none; /* Remove grain for cleaner print */
+            }
+
+            .user-info div {
+                background: none !important; /* No background for print */
+                border: none !important;
+                color: white !important; /* Keep white text */
+            }
+
+            .content {
+                padding: 30px;
+                background: white; /* White background for content in print */
+            }
+
+            .section-title {
+                color: #2d3748 !important; /* Dark text for titles in print */
+            }
+
+            .section-title::before {
+                background: linear-gradient(135deg, #f68c34 0%, #eb3300 100%) !important;
+                -webkit-print-color-adjust: exact;
+            }
+
+            table {
+                box-shadow: none; /* No table shadows */
+                border: 1px solid #e2e8f0; /* Light border for tables */
+                background: white; /* White background for tables */
+            }
+
+            thead {
+                background: #f1f5f9 !important; /* Light header for print */
+                -webkit-print-color-adjust: exact;
+            }
+
+            th {
+                color: #2d3748 !important; /* Dark text for table headers */
+                border-bottom-color: #cbd5e1 !important;
+            }
+
+            td {
+                color: #4a5568 !important; /* Dark text for table cells */
+                border-bottom-color: #f1f5f9 !important;
+            }
+
+            .budget-amount, .expense-amount {
+                -webkit-print-color-adjust: exact; /* Ensure these colors print */
+            }
+
+            .summary-table {
+                background: #f8fafc !important; /* Light background for print */
+                border-color: #cbd5e1 !important;
+            }
+
+            .summary-table th {
+                background: linear-gradient(135deg, #f68c34 0%, #eb3300 100%) !important;
+                -webkit-print-color-adjust: exact;
+                color: white !important;
+            }
+
+            .summary-table td {
+                color: #2d3748 !important; /* Dark text for summary amounts */
+            }
+
+            .total-budget, .total-expenses, .remaining-balance, .remaining-balance.negative {
+                -webkit-print-color-adjust: exact; /* Ensure these colors print */
+            }
+
+            .category-tag {
+                background: #e0e7ff !important; /* Light background for print */
+                color: #4f46e5 !important; /* Dark blue text */
+                -webkit-print-color-adjust: exact;
+                border-color: #c7d2fe !important;
+            }
+
+            .stats-grid {
+                page-break-inside: avoid; /* Keep stats together */
+            }
+
+            .stat-card {
+                box-shadow: none; /* No shadow for print */
+                border-left-width: 3px; /* Slightly thinner border for print */
+                background: white !important; /* White background for cards in print */
+            }
+
+            .stat-value {
+                color: #2d3748 !important; /* Dark text for stat values in print */
+            }
+
+            .stat-label {
+                color: #64748b !important; /* Dark text for stat labels in print */
+            }
+
+            .footer {
+                background: #f1f5f9 !important; /* Light footer for print */
+                color: #64748b !important;
+                border-top-color: #e2e8f0 !important;
             }
         }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="report-container">
-        <!-- Header Section -->
         <div class="header">
             <h1>Monthly Budget & Expenses Report</h1>
             <div class="user-info">
@@ -298,7 +390,6 @@
         </div>
 
         <div class="content">
-            <!-- Summary Stats -->
             <div class="stats-grid">
                 <div class="stat-card budget">
                     <div class="stat-value total-budget">M{{ number_format($totalBudget, 2) }}</div>
@@ -316,7 +407,6 @@
                 </div>
             </div>
 
-            <!-- Budget Section -->
             <div class="section">
                 <h3 class="section-title">Budget Allocation</h3>
                 <table>
@@ -339,7 +429,6 @@
                 </table>
             </div>
 
-            <!-- Expenses Section -->
             <div class="section">
                 <h3 class="section-title">Expense Details</h3>
                 <table>
@@ -364,7 +453,6 @@
                 </table>
             </div>
 
-            <!-- Summary Section -->
             <div class="section">
                 <h3 class="section-title">Financial Summary</h3>
                 <table class="summary-table">
@@ -388,7 +476,6 @@
             </div>
         </div>
 
-        <!-- Footer -->
         <div class="footer">
             <p><strong>Generated on:</strong> {{ \Carbon\Carbon::now()->format('l, F j, Y \a\t g:i A') }}</p>
             <p>This report provides a comprehensive overview of your monthly financial activity.</p>
