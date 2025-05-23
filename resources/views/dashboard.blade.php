@@ -1,387 +1,602 @@
+
 @extends('layouts.app')
 
 @section('title', 'Budget Tracker Dashboard')
 
 @section('content')
+
 <style>
-    /* Root CSS Variables for better consistency and easier theming */
-   :root {
-    /* Colors */
-    --primary-gradient-start: #00B4DB; /* Cool teal blue */
-    --primary-gradient-end: #0083B0;   /* Deep ocean blue */
+    /* Modern Budget Tracker Dashboard CSS */
+/* Modern Budget Tracker Dashboard CSS */
 
-    --income-color: #2ECC71;  /* Emerald green */
-    --expense-color: #E74C3C; /* Soft red */
-    --budget-color: #3498DB;  /* Bright sky blue */
-    --remaining-color: #9B59B6; /* Vivid purple */
-
-    /* Lightened versions for gradients */
-    --income-color-light: #58D68D;
-    --expense-color-light: #EC7063;
-    --budget-color-light: #5DADE2;
-    --remaining-color-light: #BB8FCE;
-
-    /* Glassmorphism properties */
-    --glass-bg: rgba(255, 255, 255, 0.9);
-    --glass-border: 1px solid rgba(255, 255, 255, 0.3);
-    --glass-shadow-light: 0 10px 30px rgba(0, 0, 0, 0.05);
-    --glass-shadow-hover: 0 20px 50px rgba(0, 0, 0, 0.15);
-    --dashboard-header-bg: rgba(255, 255, 255, 0.2);
-    --dashboard-header-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-
-    /* Typography colors */
-    --text-dark: #1A1F36;
-    --text-muted: #6C757D;
-    --text-light-muted: #A0AEC0;
-
-    /* Border & Divider colors */
-    --border-divider: rgba(0, 0, 0, 0.08);
-    --table-border-bottom: rgba(0, 0, 0, 0.05);
-
-    /* Spacing */
-    --spacing-md: 1.5rem;
-    --spacing-lg: 2rem;
+/* Root Variables */
+:root {
+  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+  --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+  
+  --glass-bg: rgba(255, 255, 255, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.18);
+  --text-primary: #2d3748;
+  --text-secondary: #718096;
+  --shadow-light: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  --shadow-hover: 0 15px 35px rgba(31, 38, 135, 0.2);
+  
+  --border-radius: 20px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-    body {
+/* Override body styles for your template */
+.content-wrapper {
+  background-attachment: fixed;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Animated Background Particles */
+.content-wrapper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.2) 2px, transparent 0),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 1px, transparent 0);
+  background-size: 50px 50px;
+  animation: float 20s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ensure content is above background */
+.content {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+/* Font Awesome Icon Fixes */
+.fas, .fa {
+  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome" !important;
+  font-weight: 900 !important;
+  font-style: normal !important;
+  display: inline-block !important;
+}
+
+.far {
+  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome" !important;
+  font-weight: 400 !important;
+}
+
+/* Ensure icons are visible */
+.dashboard-title i,
+.stats-icon i,
+.card-title i,
+.form-label i,
+.btn i,
+.badge i,
+.stats-change i {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Container adjustment for your template */
+.container-fluid {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+  text-align: center;
+  margin-bottom: 3rem;
+  animation: slideDown 0.8s ease-out;
+}
+
+.dashboard-title {
+  font-size: 3rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-title i {
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.9);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Stats Cards */
+.stats-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  box-shadow: var(--shadow-light);
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+  animation: slideUp 0.6s ease-out;
+  animation-fill-mode: both;
+}
+
+.stats-card:nth-child(1) { animation-delay: 0.1s; }
+.stats-card:nth-child(2) { animation-delay: 0.2s; }
+.stats-card:nth-child(3) { animation-delay: 0.3s; }
+.stats-card:nth-child(4) { animation-delay: 0.4s; }
+
+.stats-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.stats-card:hover {
+  transform: translateY(-10px);
+  box-shadow: var(--shadow-hover);
+}
+
+.stats-card:hover::before {
+  left: 100%;
+}
+
+.stats-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+  color: white;
+  transition: var(--transition);
+}
+
+.stats-icon.income {
+  background: var(--success-gradient);
+}
+
+.stats-icon.expense {
+  background: var(--danger-gradient);
+}
+
+.stats-icon.budget {
+  background: var(--primary-gradient);
+}
+
+.stats-icon.remaining {
+  background: var(--warning-gradient);
+}
+
+.stats-card:hover .stats-icon {
+  transform: rotate(360deg) scale(1.1);
+}
+
+.stats-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.stats-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.stats-change {
+  font-size: 0.85rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.stats-change.positive {
+  color: #48bb78;
+}
+
+.stats-change.negative {
+  color: #f56565;
+}
+
+/* Glass Cards */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-light);
+  transition: var(--transition);
+  animation: slideUp 0.8s ease-out;
+  overflow: hidden;
+}
+
+.glass-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-hover);
+}
+
+.card-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.card-title i {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Filter Section */
+.filter-section {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: var(--shadow-light);
+  animation: slideUp 0.6s ease-out;
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.form-control {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  color: var(--text-primary);
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.form-control:focus {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+  outline: none;
+}
+
+.btn-primary {
+  background: var(--primary-gradient);
+  border: none;
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  color: white;
+  transition: var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.6s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:hover::before {
+  left: 100%;
+}
+
+/* Tables */
+.table-responsive {
+  padding: 1.5rem;
+}
+
+.table {
+  color: var(--text-primary);
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table thead th {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  padding: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  position: sticky;
+  top: 0;
+}
+
+.table tbody tr {
+  transition: var(--transition);
+}
+
+.table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.02);
+}
+
+.table td {
+  padding: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  vertical-align: middle;
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-success {
+  background: var(--success-gradient);
+  color: white;
+}
+
+.badge-danger {
+  background: var(--danger-gradient);
+  color: white;
+}
+
+.badge-primary {
+  background: var(--primary-gradient);
+  color: white;
+}
+
+.chart-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .data-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .data-table tbody tr:hover {
+            background-color: #f1f5f9;
+        }
+
+        .expense-amount {
+            color: #fc5c7d;
+            font-weight: 600;
+        }
+
+        .budget-amount {
+            color: #6a82fb;
+            font-weight: 600;
+        }
+
+/* Animations */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* DataTables Styling */
+.dataTables_wrapper {
+  color: var(--text-primary);
+}
+
+.dataTables_filter input {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem;
+  color: var(--text-primary);
+  margin-left: 0.5rem;
+}
+
+.dataTables_length select {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.25rem;
+  color: var(--text-primary);
+}
+
+.dataTables_paginate .paginate_button {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 8px !important;
+  color: var(--text-primary) !important;
+  margin: 0 2px;
+  transition: var(--transition);
+}
+
+.dataTables_paginate .paginate_button:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: translateY(-2px);
+}
+
+.dataTables_paginate .paginate_button.current {
+  background: var(--primary-gradient) !important;
+  color: white !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container-fluid {
+    padding: 1rem;
+  }
   
-        background: linear-gradient(135deg, #e0f2f7 0%, #c4e0f0 100%); /* Softer, light background */
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
+  .dashboard-title {
+    font-size: 2rem;
+  }
+  
+  .stats-card {
+    padding: 1.5rem;
+  }
+  
+  .stats-value {
+    font-size: 1.5rem;
+  }
+  
+  .card-header {
+    padding: 1rem;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .chart-container {
+    height: 300px;
+    padding: 1rem;
+  }
+}
 
-    .container-fluid {
-        flex-grow: 1;
-    }
+/* Hover Effects for Interactive Elements */
+.stats-card, .glass-card, .btn-primary, .badge {
+  cursor: pointer;
+}
 
-    .dashboard-header {
-        background: var(--dashboard-header-bg);
-        backdrop-filter: blur(25px); /* Stronger blur */
-        border-radius: 20px;
-        padding: var(--spacing-lg);
-        margin-bottom: var(--spacing-lg);
-        border: var(--glass-border);
-        box-shadow: var(--dashboard-header-shadow); /* Added subtle shadow */
-        animation: slideInDown 0.8s ease-out;
-    }
+/* Loading Animation */
+.loading {
+  position: relative;
+  overflow: hidden;
+}
 
-    .dashboard-title {
-        color: var(--text-dark); /* Changed to dark for better contrast on light glass */
-        font-weight: 800;
-        font-size: 2.8rem; /* Slightly larger */
-        text-align: center;
-        text-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Softer text shadow */
-        margin: 0;
-        letter-spacing: -0.5px; /* Tighter letter spacing */
-    }
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: loading 1.5s infinite;
+}
 
-    .stats-card {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border-radius: 20px;
-        padding: var(--spacing-lg);
-        border: var(--glass-border);
-        box-shadow: var(--glass-shadow-light);
-        transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
-        position: relative;
-        overflow: hidden;
-        animation: slideInUp 0.8s ease-out;
-        animation-fill-mode: both;
-    }
+@keyframes loading {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
 
-    .stats-card:hover {
-        transform: translateY(-10px) scale(1.01); /* Slightly less scale */
-        box-shadow: var(--glass-shadow-hover);
-    }
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
 
-    .stats-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 5px; /* Slightly thicker line */
-        background: linear-gradient(90deg, var(--accent-color), var(--accent-color-light));
-        border-radius: 20px 20px 0 0;
-    }
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
 
-    .stats-card.income::before { --accent-color: var(--income-color); --accent-color-light: var(--income-color-light); }
-    .stats-card.expense::before { --accent-color: var(--expense-color); --accent-color-light: var(--expense-color-light); }
-    .stats-card.budget::before { --accent-color: var(--budget-color); --accent-color-light: var(--budget-color-light); }
-    .stats-card.remaining::before { --accent-color: var(--remaining-color); --accent-color-light: var(--remaining-color-light); }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+}
 
-    .stats-icon {
-        width: 65px; /* Slightly larger icon */
-        height: 65px;
-        border-radius: 18px; /* Slightly more rounded */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem; /* Larger icon font */
-        margin-bottom: 1rem;
-        position: relative;
-        overflow: hidden;
-        z-index: 1; /* Ensure icon is above pseudo-element */
-    }
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
 
-    .stats-icon::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        background: linear-gradient(45deg, var(--icon-bg), var(--icon-bg-light));
-        opacity: 0.12; /* Slightly more visible background */
-        border-radius: inherit; /* Inherit border radius */
-    }
-
-    .stats-icon.income { --icon-bg: var(--income-color); --icon-bg-light: var(--income-color-light); color: var(--income-color); }
-    .stats-icon.expense { --icon-bg: var(--expense-color); --icon-bg-light: var(--expense-color-light); color: var(--expense-color); }
-    .stats-icon.budget { --icon-bg: var(--budget-color); --icon-bg-light: var(--budget-color-light); color: var(--budget-color); }
-    .stats-icon.remaining { --icon-bg: var(--remaining-color); --icon-bg-light: var(--remaining-color-light); color: var(--remaining-color); }
-
-    .stats-label {
-        font-size: 0.9rem; /* Slightly larger */
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.7px; /* More letter spacing */
-        color: var(--text-muted);
-        margin-bottom: 0.6rem;
-    }
-
-    .stats-value {
-        font-size: 2.2rem; /* Larger value */
-        font-weight: 800;
-        color: var(--text-dark);
-        margin-bottom: 0.75rem; /* More space */
-    }
-
-    .stats-change {
-        font-size: 0.875rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 0.35rem; /* Slightly more gap */
-    }
-
-    .stats-change.positive { color: var(--income-color); }
-    .stats-change.negative { color: var(--expense-color); }
-    .stats-change i { font-size: 0.95rem; } /* Slightly larger icon */
-
-
-    .glass-card {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border-radius: 20px;
-        padding: var(--spacing-lg);
-        border: var(--glass-border);
-        box-shadow: var(--glass-shadow-light);
-        animation: slideInUp 0.8s ease-out;
-        animation-fill-mode: both;
-        transition: all 0.3s ease;
-    }
-
-    .glass-card:hover {
-        transform: translateY(-8px); /* Slightly more lift */
-        box-shadow: var(--glass-shadow-hover);
-    }
-
-    .card-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--border-divider); /* More visible divider */
-    }
-
-    .card-title {
-        font-size: 1.35rem; /* Slightly larger */
-        font-weight: 700;
-        color: var(--text-dark);
-        display: flex;
-        align-items: center;
-        gap: 0.75rem; /* More space between icon and text */
-    }
-    .card-title i {
-        color: var(--primary-gradient-start); /* Consistent icon color */
-    }
-
-    .filter-section {
-        background: var(--glass-bg);
-        backdrop-filter: blur(20px);
-        border-radius: 18px; /* Slightly less rounded than cards */
-        padding: var(--spacing-md);
-        margin-bottom: var(--spacing-lg);
-        border: var(--glass-border);
-        box-shadow: var(--glass-shadow-light);
-        animation: slideInUp 0.6s ease-out;
-    }
-
-    .form-label {
-        font-weight: 600;
-        color: var(--text-dark);
-        margin-bottom: 0.5rem;
-    }
-
-    .form-control {
-        border: 1px solid rgba(0, 0, 0, 0.15); /* Slightly more defined border */
-        border-radius: 12px; /* Softer corners */
-        padding: 0.85rem 1.1rem; /* More generous padding */
-        font-weight: 500;
-        transition: all 0.3s ease;
-        background: white;
-        color: var(--text-dark);
-    }
-
-    .form-control:focus {
-        border-color: var(--primary-gradient-start);
-        box-shadow: 0 0 0 4px rgba(106, 130, 251, 0.2); /* Stronger focus shadow */
-        outline: none;
-    }
-
-    .btn {
-        border-radius: 12px; /* Matches form controls */
-        padding: 0.85rem 2.2rem; /* More generous padding */
-        font-weight: 600;
-        transition: all 0.3s ease;
-        border: none;
-        cursor: pointer;
-        font-size: 1.05rem; /* Slightly larger text */
-    }
-
-    .btn-primary {
-        background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
-        color: white;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15); /* Initial shadow */
-    }
-
-    .btn-primary:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 12px 30px rgba(106, 130, 251, 0.4); /* Stronger, colored shadow */
-    }
-
-    .table {
-        border-radius: 15px;
-        overflow: hidden;
-        border: none;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05); /* Softer shadow for tables */
-    }
-
-    .table thead th {
-        background: linear-gradient(135deg, var(--primary-gradient-start) 0%, var(--primary-gradient-end) 100%);
-        color: white;
-        font-weight: 600;
-        border: none;
-        padding: 1.1rem 1rem; /* More padding */
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .table tbody tr {
-        transition: background-color 0.2s ease; /* Smooth hover for background */
-    }
-
-    .table tbody tr:nth-child(even) {
-        background-color: rgba(0, 0, 0, 0.02); /* Very subtle alternating row color */
-    }
-
-    .table tbody tr:hover {
-        background-color: rgba(0, 0, 0, 0.06); /* Slightly darker on hover */
-        transform: none; /* No transform on table rows for stability */
-        box-shadow: none;
-    }
-
-    .table tbody td {
-        padding: 1rem;
-        border: none;
-        border-bottom: 1px solid var(--table-border-bottom);
-        color: var(--text-dark); /* Ensure text color is dark */
-    }
-    .table tbody tr:last-child td {
-        border-bottom: none; /* No border on last row */
-    }
-
-    .badge {
-        padding: 0.6rem 1.1rem; /* More generous padding */
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.7rem; /* Slightly smaller for compactness */
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        display: inline-flex; /* For icon alignment */
-        align-items: center;
-        gap: 0.3rem; /* Space between icon and text */
-    }
-
-    .badge-success {
-        background: linear-gradient(135deg, var(--income-color), var(--income-color-light));
-        color: white;
-    }
-
-    .badge-danger {
-        background: linear-gradient(135deg, var(--expense-color), var(--expense-color-light));
-        color: white;
-    }
-
-    .badge-primary {
-        background: linear-gradient(135deg, var(--budget-color), var(--budget-color-light));
-        color: white;
-    }
-
-    /* Animations */
-    @keyframes slideInDown {
-        from { opacity: 0; transform: translateY(-30px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes slideInUp {
-        from { opacity: 0; transform: translateY(30px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .chart-container {
-        position: relative;
-        width: 100%;
-        min-height: 380px; /* Increased height for charts */
-        margin: 1rem 0;
-        display: flex; /* To center content like loading spinner */
-        justify-content: center;
-        align-items: center;
-    }
-
-    .loading-spinner {
-        display: inline-block;
-        width: 25px; /* Larger spinner */
-        height: 25px;
-        border: 4px solid rgba(0, 0, 0, 0.1); /* Lighter, more subtle border */
-        border-radius: 50%;
-        border-top-color: var(--primary-gradient-start); /* Themed spinner color */
-        animation: spin 1s ease-in-out infinite;
-    }
-
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
-
-    /* Staggered animation delays for stats cards */
-    .stats-card:nth-child(1) { animation-delay: 0.1s; }
-    .stats-card:nth-child(2) { animation-delay: 0.2s; }
-    .stats-card:nth-child(3) { animation-delay: 0.3s; }
-    .stats-card:nth-child(4) { animation-delay: 0.4s; }
-
-    /* Staggered animation delays for glass cards */
-    /* Note: Adjust these if you add/remove cards */
-    .filter-section { animation-delay: 0.5s; }
-    .glass-card:nth-of-type(1) { animation-delay: 0.6s; } /* Weekly Breakdown */
-    .glass-card:nth-of-type(2) { animation-delay: 0.7s; } /* Top 5 Recurring */
-    .glass-card:nth-of-type(3) { animation-delay: 0.8s; } /* Expense Overview Chart */
-    .glass-card:nth-of-type(4) { animation-delay: 0.9s; } /* Budget Status Chart */
-    .glass-card:nth-of-type(5) { animation-delay: 1.0s; } /* NEW: Expense Categories Breakdown Table */
-    .glass-card:nth-of-type(6) { animation-delay: 1.1s; } /* Budget vs Expense Chart */
-    .glass-card:nth-of-type(7) { animation-delay: 1.2s; } /* Recent Transactions */
-
+/* Focus States for Accessibility */
+.form-control:focus,
+.btn-primary:focus,
+.stats-card:focus {
+  outline: 2px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
 </style>
-
 
 <div class="container-fluid py-4"> <div class="dashboard-header">
         <h1 class="dashboard-title">
@@ -394,21 +609,21 @@
         <div class="col-xl-3 col-md-6 col-sm-12">
             <div class="stats-card income">
                 <div class="stats-icon income">
-                    <i class="fas fa-wallet"></i>
+                    <i class="fas fa-coins"></i>
                 </div>
                 <div class="stats-label">Total Income</div>
                 <div class="stats-value">M{{ number_format($totalIncome, 2) }}</div>
                 <div class="stats-change {{ $incomePercentageChange >= 0 ? 'positive' : 'negative' }}">
-                    <i class="fas fa-{{ $incomePercentageChange >= 0 ? 'arrow-up' : 'arrow-down' }}"></i>
+                    <i class="fas fa-{{ $incomePercentageChange >= 0 ? 'trending-up' : 'trending-down' }}"></i>
                     {{ number_format($incomePercentageChange) }}% since last month
                 </div>
             </div>
         </div>
-
+    
         <div class="col-xl-3 col-md-6 col-sm-12">
             <div class="stats-card expense">
                 <div class="stats-icon expense">
-                    <i class="fas fa-credit-card"></i>
+                    <i class="fas fa-receipt"></i>
                 </div>
                 <div class="stats-label">Total Expenses</div>
                 <div class="stats-value">M{{ number_format($totalExpenses, 2) }}</div>
@@ -418,11 +633,11 @@
                 </div>
             </div>
         </div>
-
+    
         <div class="col-xl-3 col-md-6 col-sm-12">
             <div class="stats-card budget">
                 <div class="stats-icon budget">
-                    <i class="fas fa-calendar-alt"></i>
+                    <i class="fas fa-chart-pie"></i>
                 </div>
                 <div class="stats-label">Monthly Budget</div>
                 <div class="stats-value">M{{ number_format($monthlyBudget, 2) }}</div>
@@ -432,11 +647,11 @@
                 </div>
             </div>
         </div>
-
+    
         <div class="col-xl-3 col-md-6 col-sm-12">
             <div class="stats-card remaining">
                 <div class="stats-icon remaining">
-                    <i class="fas fa-piggy-bank"></i>
+                    <i class="fas fa-wallet"></i>
                 </div>
                 <div class="stats-label">Remaining Budget</div>
                 <div class="stats-value">M{{ number_format($remainingBudget, 2) }}</div>
@@ -544,9 +759,30 @@
                     </h5>
                 </div>
                 <div class="chart-container">
-                    <canvas id="expenseChart"></canvas>
+                    <div class="chart-wrapper">
+                        <canvas id="expenseChart"></canvas>
+                    </div>
                 </div>
+            
+                <!-- Table Container -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Expenses</th>
+                                <th>Budget</th>
+                                <th>Difference</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <!-- Table rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            
             </div>
+            
         </div>
 
         <div class="col-lg-5">
@@ -697,16 +933,20 @@
             }
         });
 
-        // Expense Overview Chart (Bar Chart)
+        const labels = @json($labels); // Categories
+        const expenseData = @json($data); // Expenses dataset
+        const budgetData = @json($budgetsData); // Budgets dataset
+
+        // Create the chart with your exact configuration
         const ctxExpense = document.getElementById('expenseChart').getContext('2d');
         const expenseChart = new Chart(ctxExpense, {
             type: 'bar',
             data: {
-                labels: @json($labels), // Categories
+                labels: labels,
                 datasets: [
                     {
                         label: 'Expenses',
-                        data: @json($data), // Expenses dataset
+                        data: expenseData,
                         backgroundColor: 'rgba(252, 92, 125, 0.8)', /* Matching primary-gradient-end for expenses */
                         borderColor: 'rgba(252, 92, 125, 1)',
                         borderWidth: 1,
@@ -715,7 +955,7 @@
                     },
                     {
                         label: 'Budget',
-                        data: @json($budgetsData), // Budgets dataset
+                        data: budgetData,
                         backgroundColor: 'rgba(106, 130, 251, 0.6)', /* Matching primary-gradient-start for budget */
                         borderColor: 'rgba(106, 130, 251, 1)',
                         borderWidth: 1,
@@ -773,6 +1013,31 @@
                 }
             }
         });
+
+        // Populate the table
+        function populateTable() {
+            const tableBody = document.getElementById('dataTableBody');
+            
+            labels.forEach((label, index) => {
+                const expense = expenseData[index];
+                const budget = budgetData[index];
+                const difference = budget - expense;
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${label}</td>
+                    <td class="expense-amount">M${expense.toFixed(2)}</td>
+                    <td class="budget-amount">M${budget.toFixed(2)}</td>
+                    <td style="color: ${difference >= 0 ? '#10b981' : '#ef4444'}; font-weight: 600;">
+                        M${difference.toFixed(2)}
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Initialize table
+        populateTable();
 
         // Budget vs Expense Chart (Line Chart)
         const budgetExpenseCanvas = document.getElementById('budgetExpenseChart');
