@@ -5,25 +5,26 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Contracts\Queue\ShouldQueue;
 
 class UserReportMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $user;
-    public $pdfPath;
+    public $pdfContent;
+    public $fileName;
 
     /**
      * Create a new message instance.
      *
      * @param $user
-     * @param $pdfPath
+     * @param $pdfContent
+     * @param $fileName
      */
     public function __construct($user, $pdfContent, $fileName)
     {
         $this->user = $user;
-        $this->pdfContent = $pdfContent; 
+        $this->pdfContent = $pdfContent;
         $this->fileName = $fileName;
     }
 
@@ -39,5 +40,6 @@ class UserReportMail extends Mailable
                     ->subject('Your Monthly Budget Report')
                     ->attachData($this->pdfContent, $this->fileName, [
                         'mime' => 'application/pdf',
-                    ]);    }
+                    ]);
+    }
 }
