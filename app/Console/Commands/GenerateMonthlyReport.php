@@ -43,8 +43,8 @@ class GenerateMonthlyReport extends Command
                 continue;
             }
         
-            $totalExpenses = $expenses->sum(fn ($e) => decrypt($e->amount));
-            $totalBudget = $budgets->sum(fn ($b) => decrypt($b->amount));
+            $totalExpenses = $expenses->sum('amount'); // Laravel will call the accessor for each
+            $totalBudget = $budgets->sum('amount');
         
             $pdf = Pdf::loadView('reports.user_report', compact('user', 'expenses', 'budgets', 'totalExpenses', 'totalBudget'));
             $pdfContent = $pdf->output();
