@@ -26,7 +26,6 @@ class GenerateMonthlyReport extends Command
             return;
         }
     
-        // Get previous month
         $previousMonthDate = Carbon::now()->subMonth();
         $previousMonth = $previousMonthDate->format('Y-m');
     
@@ -41,25 +40,23 @@ class GenerateMonthlyReport extends Command
     
             if ($expenses->isEmpty() && $budgets->isEmpty()) {
                 $this->info("No data found for {$user->email} for {$previousMonthDate->format('F Y')}.");
-                continue; // Skip the current user and move to the next one
+                continue;
             }
     
-            // Calculate totals
-            $totalExpenses = $expenses->sum(fn ($expense) => ($expense->amount));  // Assuming amount is encrypted
-            $totalBudget = $budgets->sum(fn ($budget) => ($budget->amount));  // Assuming amount is encrypted
+            $totalExpenses = $expenses->sum(fn ($e) => decrypt($e->amount));
+            $totalBudget = $budgets->sum(fn ($b) => decrypt($b->amount));
     
-            // Generate PDF
+            // Generate PDF as raw content (in-memory)
             $pdf = Pdf::loadView('reports.user_report', compact('user', 'expenses', 'budgets', 'totalExpenses', 'totalBudget'));
+            $pdfContent = $pdf->output();  // Returns raw PDF data
             $fileName = "BudgetTrackerReport_{$user->name}_{$previousMonth}.pdf";
-            $pdfPath = storage_path("app/public/reports/$fileName");
     
-            $pdf->save($pdfPath);
-    
-            // Send email
-            Mail::to($user->email)->send(new UserReportMail($user, $pdfPath));
+            // Send email with raw PDF attachment
+            Mail::to($user->email)->send(new UserReportMail($user, $pdfContent, $fileName));
     
             $this->info("Report sent to {$user->email} for {$previousMonthDate->format('F Y')}");
         }
     }
+    
     
 }

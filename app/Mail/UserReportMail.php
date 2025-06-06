@@ -20,10 +20,11 @@ class UserReportMail extends Mailable
      * @param $user
      * @param $pdfPath
      */
-    public function __construct($user, $pdfPath)
+    public function __construct($user, $pdfContent, $fileName)
     {
         $this->user = $user;
-        $this->pdfPath = $pdfPath;
+        $this->pdfContent = $pdfContent; 
+        $this->fileName = $fileName;
     }
 
     /**
@@ -36,6 +37,7 @@ class UserReportMail extends Mailable
         return $this->view('emails.user_report')
                     ->with(['user' => $this->user])
                     ->subject('Your Monthly Budget Report')
-                    ->attach($this->pdfPath);
-    }
+                    ->attachData($this->pdfContent, $this->fileName, [
+                        'mime' => 'application/pdf',
+                    ]);    }
 }
