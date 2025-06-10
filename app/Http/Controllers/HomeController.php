@@ -40,12 +40,10 @@ class HomeController extends Controller
         $selectedMonth = $request->input('month', now()->format('Y-m')); // Default to current month
         
         // Parse the selected month into Carbon instances
-        $currentMonthNumeric = Carbon::parse($selectedMonth)->format('m');
-    
-     
         $currentDate = Carbon::parse($selectedMonth); // Parse the date for selected month
         $userId = auth()->id();
-      // Define custom month period (27th of previous month to 26th of current month)
+        
+        // Define custom month period (26th of previous month to 25th of current month)
         $startDate = $currentDate->copy()->subMonth()->setDay(26)->startOfDay();
         $endDate = $currentDate->copy()->setDay(25)->endOfDay();
      
@@ -62,7 +60,6 @@ class HomeController extends Controller
                 return $expense;
             });
     
-        
         $recentIncome = Income::where('user_id', $userId)
             ->whereBetween('date', [$startDate, $endDate])
             ->orderBy('date', 'desc')
@@ -77,7 +74,7 @@ class HomeController extends Controller
     
         $monthlyBudget = Budget::where('user_id', $userId)
             ->where('month', $currentMonthNumeric)
-            ->where('year', $currentYearNumeric) // Add year to the query
+            ->where('year', $currentYearNumeric)
             ->get()
             ->sum(function ($budget) {
                 return $budget->amount;  // The getter will automatically decrypt the amount
@@ -92,12 +89,12 @@ class HomeController extends Controller
         $previousTotalIncome = Income::where('user_id', $userId)
             ->whereBetween('date', [$previousStartDate, $previousEndDate])
             ->get()
-            ->sum('amount'); // Simplified sum syntax
+            ->sum('amount');
     
         $previousTotalExpenses = Expense::where('user_id', $userId)
             ->whereBetween('date', [$previousStartDate, $previousEndDate])
             ->get()
-            ->sum('amount'); // Fixed - was using 'income' variable name
+            ->sum('amount');
     
         // Calculate percentage change in income and expenses
         $incomePercentageChange = $previousTotalIncome > 0 ? (($totalIncome - $previousTotalIncome) / $previousTotalIncome) * 100 : 0;
@@ -106,13 +103,45 @@ class HomeController extends Controller
         // Combine the recent transactions and sort by date
         $recentTransactions = $recentExpenses->merge($recentIncome)->sortByDesc('date');
     
-        $netSavings = $totalIncome - $totalExpenses; // Fixed - was using budget instead of income
+        $netSavings = $totalIncome - $totalExpenses;
     
         // Fetch all categories for comparison
         $allCategories = Category::all();
     
+        // Calculate historical averages for each category (ALL TIME data)
+        $categoryAverages = collect();
+        
+        foreach ($allCategories as $category) {
+            // Get ALL historical expenses for this category (no date restriction)
+            $historicalExpenses = Expense::where('user_id', $userId)
+                ->where('category_id', $category->id)
+                ->get();
+            
+            // Group by month and calculate monthly totals
+            $monthlyTotals = $historicalExpenses->groupBy(function ($expense) {
+                $expenseDate = Carbon::parse($expense->date);
+                // Use custom month period grouping (26th to 25th)
+                if ($expenseDate->day >= 26) {
+                    return $expenseDate->format('Y-m');
+                } else {
+                    return $expenseDate->subMonth()->format('Y-m');
+                }
+            })->map(function ($monthExpenses) {
+                return $monthExpenses->sum('amount');
+            });
+            
+            // Calculate average (only for months that had expenses to avoid skewing)
+            $averageAmount = $monthlyTotals->count() > 0 ? $monthlyTotals->avg() : 0;
+            
+            $categoryAverages->put($category->id, [
+                'category_name' => $category->name,
+                'average_amount' => round($averageAmount, 2),
+                'months_with_data' => $monthlyTotals->count()
+            ]);
+        }
+    
         // Group recent expenses by category and calculate total expenses and budgets
-        $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric, $currentYearNumeric) {
+        $groupedExpenses = $recentExpenses->groupBy('category_id')->map(function ($group) use ($userId, $currentMonthNumeric, $currentYearNumeric, $categoryAverages) {
             // Get the category ID for this group
             $categoryId = $group->first()->category_id; 
         
@@ -130,27 +159,35 @@ class HomeController extends Controller
                     $budgetForCategory = Budget::where('user_id', $userId)
                         ->where('category_id', $categoryId)
                         ->where('month', $currentMonthNumeric)
-                        ->where('year', $currentYearNumeric) // Add year to query
-                        ->first(); // Use first() to ensure you get the single record
+                        ->where('year', $currentYearNumeric)
+                        ->first();
+    
+                    // Get historical average for this category
+                    $categoryAverage = $categoryAverages->get($categoryId, ['average_amount' => 0]);
     
                     return [
-                        'name' => $category->name, // Category name
-                        'expense' => $totalExpense, // Total expenses for the category
-                        'budget' => $budgetForCategory ? $budgetForCategory->amount : 0 // Return 0 if no budget is found
+                        'name' => $category->name,
+                        'expense' => $totalExpense,
+                        'budget' => $budgetForCategory ? $budgetForCategory->amount : 0,
+                        'average_amount' => $categoryAverage['average_amount'],
+                        'vs_average' => $categoryAverage['average_amount'] > 0 ? 
+                            round((($totalExpense - $categoryAverage['average_amount']) / $categoryAverage['average_amount']) * 100, 1) : 0
                     ];
                 }
             }
-        
-        })->filter(); // Use filter to remove any null results
+        })->filter();
     
         // Prepare final data by including all categories, even those with no expenses
-        $finalData = $allCategories->map(function ($category) use ($groupedExpenses) {
+        $finalData = $allCategories->map(function ($category) use ($groupedExpenses, $categoryAverages) {
             $expenseData = $groupedExpenses->firstWhere('name', $category->name);
+            $categoryAverage = $categoryAverages->get($category->id, ['average_amount' => 0]);
     
             return [
                 'name' => $category->name,
                 'expense' => $expenseData['expense'] ?? 0,
-                'budget' => $expenseData['budget'] ?? 0
+                'budget' => $expenseData['budget'] ?? 0,
+                'average_amount' => $categoryAverage['average_amount'],
+                'vs_average' => isset($expenseData['vs_average']) ? $expenseData['vs_average'] : 0
             ];
         });
     
@@ -160,20 +197,19 @@ class HomeController extends Controller
         // Labels and data for charts
         $labels = $groupedExpenses->pluck('name');
         $data = $groupedExpenses->pluck('expense');
-        $budgetsData = $groupedExpenses->pluck('budget'); // Budgets for each category
+        $budgetsData = $groupedExpenses->pluck('budget');
+        $averagesData = $groupedExpenses->pluck('average_amount'); // New: averages for chart
     
         // Monthly Budget Percentage Change
         $previousTotalBudget = Budget::where('user_id', $userId)
             ->where('month', $previousMonthNumeric)
-            ->where('year', $previousYearNumeric) // Add year to query
+            ->where('year', $previousYearNumeric)
             ->get()
-            ->sum('amount'); // Simplified sum syntax
+            ->sum('amount');
             
         $budgetPercentageChange = $previousTotalBudget > 0 ? (($monthlyBudget - $previousTotalBudget) / $previousTotalBudget) * 100 : 0;
     
         $monthsToShow = $request->input('filter', 12); // Default to last 12 months
-        $start = now()->subMonths($monthsToShow)->startOfMonth();
-        $end = now()->endOfMonth();
     
         $months = [];
         $monthlyBudgets = [];
@@ -190,23 +226,26 @@ class HomeController extends Controller
                 ->where('year', $year)
                 ->where('month', $month)
                 ->get()
-                ->sum('amount'); // Simplified sum syntax
+                ->sum('amount');
+    
+            // Fixed: Use custom month period for expenses calculation
+            $monthStartDate = $date->copy()->subMonth()->setDay(26)->startOfDay();
+            $monthEndDate = $date->copy()->setDay(25)->endOfDay();
     
             $totalExpense = Expense::where('user_id', $userId)
-                ->whereYear('date', $year)
-                ->whereMonth('date', $month)
+                ->whereBetween('date', [$monthStartDate, $monthEndDate])
                 ->get()
-                ->sum('amount'); // Simplified sum syntax
+                ->sum('amount');
     
             // Store data in arrays
-            $months[] = $date->format('M Y'); // Example: "Feb 2024"
+            $months[] = $date->format('M Y');
             $monthlyBudgets[] = $totalBudget;
             $monthlyExpenses[] = $totalExpense;
         }
         
         // Calculate the number of weeks in the selected month
-        $startOfMonth = $currentDate->copy()->startOfMonth();
-        $endOfMonth = $currentDate->copy()->endOfMonth();
+        $startOfMonth = $startDate->copy();
+        $endOfMonth = $endDate->copy();
     
         // Difference in weeks (inclusive)
         $numberOfWeeks = ceil($startOfMonth->diffInDays($endOfMonth) / 7);
@@ -216,35 +255,30 @@ class HomeController extends Controller
     
         $weeklyBreakdown = [];
         
-        // Start from the first day of the month
+        // Start from the beginning of our custom month period
         $currentWeekStart = $startDate->copy()->startOfWeek();
         
-        // If the start of the week is before the start of the month, adjust it
+        // If the start of the week is before our period start, adjust it
         if ($currentWeekStart->lt($startDate)) {
             $currentWeekStart = $startDate->copy();
         }
-        
-        // Calculate the end of the first week
-        $currentWeekEnd = $currentWeekStart->copy()->endOfWeek();
-        
-        // If the end of the week is after the end of the month, adjust it
-        if ($currentWeekEnd->gt($endDate)) {
-            $currentWeekEnd = $endDate->copy();
-        }
     
-        // Loop through each week in the month
+        // Loop through each week in the period
         while ($currentWeekStart->lte($endDate)) {
-            // Ensure we don't go beyond the month boundaries
-            $weekStart = max($currentWeekStart, $startDate);
-            $weekEnd = min($currentWeekEnd, $endDate);
+            // Calculate week end (6 days after start)
+            $currentWeekEnd = $currentWeekStart->copy()->addDays(6);
+            
+            // Ensure we don't go beyond the period boundaries
+            $weekStart = $currentWeekStart->copy();
+            $weekEnd = $currentWeekEnd->gt($endDate) ? $endDate->copy() : $currentWeekEnd->copy();
     
             // Get expenses for this week
             $weekExpenses = Expense::where('user_id', $userId)
                 ->whereBetween('date', [
-                    $weekStart->copy()->startOfDay(), 
-                    $weekEnd->copy()->endOfDay()
+                    $weekStart->startOfDay(), 
+                    $weekEnd->endOfDay()
                 ])
-                ->get() // Make sure to get the data first
+                ->get()
                 ->sum('amount');
     
             // Add to breakdown array
@@ -255,31 +289,32 @@ class HomeController extends Controller
                 'total_expense' => $weekExpenses
             ];
     
-            // Move to the next week - CORRECTED
+            // Move to the next week
             $currentWeekStart = $currentWeekEnd->copy()->addDay();
-            $currentWeekEnd = $currentWeekStart->copy()->addDays(6); // Go 6 days ahead (for a 7-day week)
     
-            // Check if we're past the end of the month
+            // Check if we're past the end of our period
             if ($currentWeekStart->gt($endDate)) {
-                break; // Exit the loop if we've gone past the month
+                break;
             }
         }
     
         $topExpenses = $recentExpenses
-        ->groupBy('description')
-        ->map(fn($group) => [
-            'description'   => $group->first()->description,
-            'frequency'     => $group->count(),
-            'total_amount'  => $group->sum('amount'),
-        ])
-        ->sortByDesc('total_amount')
-        ->take(5);
-    
+            ->groupBy('description')
+            ->map(fn($group) => [
+                'description'   => $group->first()->description,
+                'frequency'     => $group->count(),
+                'total_amount'  => $group->sum('amount'),
+            ])
+            ->sortByDesc('total_amount')
+            ->take(5);
     
         return view('dashboard', compact(
             'totalIncome', 'totalExpenses', 'netSavings', 'monthlyBudget', 
             'incomePercentageChange', 'expensesPercentageChange', 
-            'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 'selectedMonth', 'budgetPercentageChange', 'months', 'monthlyBudgets', 'monthlyExpenses', 'averageWeeklySpent', 'weeklyBreakdown', 'topExpenses'
+            'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 
+            'selectedMonth', 'budgetPercentageChange', 'months', 'monthlyBudgets', 
+            'monthlyExpenses', 'averageWeeklySpent', 'weeklyBreakdown', 'topExpenses',
+            'finalData', 'categoryAverages', 'averagesData'
         ));
     }
 /**

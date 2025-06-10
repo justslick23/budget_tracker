@@ -680,6 +680,37 @@
     </div>
 
     <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="glass-card">
+                <!-- Card Header -->
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt"></i> Summary
+                    </h5>
+                </div>
+    
+                <!-- Table Container -->
+                <div class="table-container" style="overflow-x: auto;">
+                    <table class="data-table table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Average</th>
+                                <th>vs Average</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <!-- Table rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+
+    <div class="row g-4 mb-4">
         <div class="col-lg-6">
             <div class="glass-card">
                 <div class="card-header">
@@ -718,7 +749,7 @@
                 <div class="card-header">
                     <h5 class="card-title">
                         <i class="fas fa-repeat"></i>
-                        Top 5 Recurring Expenses
+                        Top 5 Expenses
                     </h5>
                 </div>
                 <div class="table-responsive">
@@ -739,7 +770,7 @@
                                 <tr>
                                     <td colspan="2" class="text-center py-4">
                                         <i class="fas fa-inbox fa-3x text-light-muted mb-3"></i>
-                                        <p class="text-muted">No recurring expenses found.</p>
+                                        <p class="text-muted">No top expenses found.</p>
                                     </td>
                                 </tr>
                             @endforelse
@@ -764,22 +795,7 @@
                     </div>
                 </div>
             
-                <!-- Table Container -->
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Category</th>
-                                <th>Expenses</th>
-                                <th>Budget</th>
-                                <th>Difference</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dataTableBody">
-                            <!-- Table rows will be populated by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
+              
             
             </div>
             
@@ -813,9 +829,10 @@
                         <option value="12" {{ request('filter', 12) == 12 ? 'selected' : '' }}>Last 12 Months</option>
                     </select>
                 </div>
-                <div class="chart-container">
+                <div class="chart-container" style="height: 400px;">
                     <canvas id="budgetExpenseChart"></canvas>
                 </div>
+                
             </div>
         </div>
     </div>
@@ -944,26 +961,37 @@
             data: {
                 labels: labels,
                 datasets: [
-                    {
-                        label: 'Expenses',
-                        data: expenseData,
-                        backgroundColor: 'rgba(252, 92, 125, 0.8)', /* Matching primary-gradient-end for expenses */
-                        borderColor: 'rgba(252, 92, 125, 1)',
-                        borderWidth: 1,
-                        borderRadius: 8, /* Rounded bars */
-                        hoverBackgroundColor: 'rgba(252, 92, 125, 1)'
-                    },
-                    {
-                        label: 'Budget',
-                        data: budgetData,
-                        backgroundColor: 'rgba(106, 130, 251, 0.6)', /* Matching primary-gradient-start for budget */
-                        borderColor: 'rgba(106, 130, 251, 1)',
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        hoverBackgroundColor: 'rgba(106, 130, 251, 0.8)'
-                    }
-                ]
+            {
+                label: 'Expenses',
+                data: expenseData,
+                backgroundColor: 'rgba(252, 92, 125, 0.8)',
+                borderColor: 'rgba(252, 92, 125, 1)',
+                borderWidth: 1,
+                borderRadius: 8,
+                hoverBackgroundColor: 'rgba(252, 92, 125, 1)'
             },
+            {
+                label: 'Budget',
+                data: budgetData,
+                backgroundColor: 'rgba(106, 130, 251, 0.6)',
+                borderColor: 'rgba(106, 130, 251, 1)',
+                borderWidth: 1,
+                borderRadius: 8,
+                hoverBackgroundColor: 'rgba(106, 130, 251, 0.8)'
+            },
+            {
+                label: '6-Month Average',
+                data: @json($averagesData), // Add this line
+                type: 'line',
+                borderColor: 'rgba(34, 197, 94, 0.8)',
+                backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: 'rgba(34, 197, 94, 1)',
+                fill: false
+            }
+        ]
+    },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
@@ -1016,25 +1044,28 @@
 
         // Populate the table
         function populateTable() {
-            const tableBody = document.getElementById('dataTableBody');
-            
-            labels.forEach((label, index) => {
-                const expense = expenseData[index];
-                const budget = budgetData[index];
-                const difference = budget - expense;
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${label}</td>
-                    <td class="expense-amount">M${expense.toFixed(2)}</td>
-                    <td class="budget-amount">M${budget.toFixed(2)}</td>
-                    <td style="color: ${difference >= 0 ? '#10b981' : '#ef4444'}; font-weight: 600;">
-                        M${difference.toFixed(2)}
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
+    const tableBody = document.getElementById('dataTableBody');
+    const averageData = @json($averagesData);
+    
+    labels.forEach((label, index) => {
+        const expense = expenseData[index];
+        const budget = budgetData[index];
+        const average = averageData[index];
+        const difference = budget - expense;
+        const vsAverage = average > 0 ? ((expense - average) / average * 100).toFixed(1) : 0;
+        
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${label}</td>
+            <td class="average-amount text-muted">M${average.toFixed(2)}</td>
+           
+            <td style="color: ${vsAverage >= 0 ? '#ef4444' : '#10b981'}; font-weight: 600;">
+                ${vsAverage > 0 ? '+' : ''}${vsAverage}%
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
 
         // Initialize table
         populateTable();
