@@ -695,7 +695,7 @@
                         <thead>
                             <tr>
                                 <th>Category</th>
-                                <th>Average</th>
+                                <th>Average Spent</th>
                                 <th>vs Average</th>
                             </tr>
                         </thead>
