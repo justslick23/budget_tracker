@@ -40,47 +40,43 @@ class ExpenseController extends Controller
         
         return view('expenses.create', compact('categories', 'pastDescriptions'));
     }
-
     public function store(Request $request)
     {
         $request->validate([
             'amount' => 'required|numeric',
             'category_id' => 'required|exists:categories,id',
             'description' => 'nullable|string',
-            'date' => 'required|date',
+            'date' => 'required_unless:recurring,1|nullable|date',
+            'day_of_month' => 'required_if:recurring,1|nullable|integer|min:1|max:31',
         ]);
     
-        // Add user_id to the request data
         $requestData = $request->all();
-        $requestData['user_id'] = auth()->id(); // Set the user_id from the authenticated user
+        $requestData['user_id'] = auth()->id();
     
-        // Create the expense
-        $expense = Expense::create($requestData);
-
-    // Get historical expenses for the user
-    $historicalExpenses = Expense::where('user_id', auth()->id())
-        ->orderBy('date', 'asc')
-        ->get(); // Fetch historical expenses
-
-        $expensesArray = $historicalExpenses->map(function ($expense) {
-            return [
-                'date' => $expense->date->format('Y-m-d'), // Format date as needed
-                'amount' => $expense->amount,
-                'description' => $expense->description,
-                // Add any other relevant fields here
-            ];
-        })->toArray();
-
-       
+        // Only create a one-time expense if it's not recurring
+        if (!$request->has('recurring')) {
+            $expense = Expense::create($requestData);
     
-
-    // Notify the user about the recorded expense
-    auth()->user()->notify(new ExpenseRecorded($expense->amount, $expense->category,  $expense->date, $expense->description));
-    $this->sendSmsNotification($expense);
-
-    return redirect()->route('expenses.index')->with('success', 'Expense added successfully.');
-
+            // Notify and log the one-time expense
+            auth()->user()->notify(new ExpenseRecorded($expense->amount, $expense->category, $expense->date, $expense->description));
+            $this->sendSmsNotification($expense);
+        }
+    
+        // Create recurring expense if applicable
+        if ($request->has('recurring') && $request->filled('day_of_month')) {
+            \App\Models\RecurringExpense::create([
+                'user_id' => auth()->id(),
+                'category_id' => $request->category_id,
+                'amount' => $request->amount,
+                'description' => $request->description,
+                'day_of_month' => $request->day_of_month,
+                'active' => true,
+            ]);
+        }
+    
+        return redirect()->route('expenses.index')->with('success', 'Expense added successfully.');
     }
+    
 
     public function edit($id)
 {
