@@ -1,1213 +1,929 @@
-
 @extends('layouts.app')
 
-@section('title', 'Budget Tracker Dashboard')
+@section('title', 'Budget Dashboard')
 
 @section('content')
 
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
 <style>
-    /* Modern Budget Tracker Dashboard CSS */
-/* Modern Budget Tracker Dashboard CSS */
-
-/* Root Variables */
-:root {
-  --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-  --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-  --warning-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
-  --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
-  
-  --glass-bg: rgba(255, 255, 255, 0.25);
-  --glass-border: rgba(255, 255, 255, 0.18);
-  --text-primary: #2d3748;
-  --text-secondary: #718096;
-  --shadow-light: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
-  --shadow-hover: 0 15px 35px rgba(31, 38, 135, 0.2);
-  
-  --border-radius: 20px;
-  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Override body styles for your template */
-.content-wrapper {
-  background-attachment: fixed;
-  min-height: 100vh;
-  position: relative;
-}
-
-/* Animated Background Particles */
-.content-wrapper::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.2) 2px, transparent 0),
-    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.1) 1px, transparent 0);
-  background-size: 50px 50px;
-  animation: float 20s ease-in-out infinite;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Ensure content is above background */
-.content {
-  position: relative;
-  z-index: 1;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-20px); }
-}
-
-/* Font Awesome Icon Fixes */
-.fas, .fa {
-  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome" !important;
-  font-weight: 900 !important;
-  font-style: normal !important;
-  display: inline-block !important;
-}
-
-.far {
-  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free", "FontAwesome" !important;
-  font-weight: 400 !important;
-}
-
-/* Ensure icons are visible */
-.dashboard-title i,
-.stats-icon i,
-.card-title i,
-.form-label i,
-.btn i,
-.badge i,
-.stats-change i {
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-/* Container adjustment for your template */
-.container-fluid {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 2rem;
-}
-
-/* Dashboard Header */
-.dashboard-header {
-  text-align: center;
-  margin-bottom: 3rem;
-  animation: slideDown 0.8s ease-out;
-}
-
-.dashboard-title {
-  font-size: 3rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, #fff 0%, rgba(255, 255, 255, 0.8) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin: 0;
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-}
-
-.dashboard-title i {
-  -webkit-text-fill-color: rgba(255, 255, 255, 0.9);
-  animation: pulse 2s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
-}
-
-/* Stats Cards */
-.stats-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius);
-  padding: 2rem;
-  box-shadow: var(--shadow-light);
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-  animation: slideUp 0.6s ease-out;
-  animation-fill-mode: both;
-}
-
-.stats-card:nth-child(1) { animation-delay: 0.1s; }
-.stats-card:nth-child(2) { animation-delay: 0.2s; }
-.stats-card:nth-child(3) { animation-delay: 0.3s; }
-.stats-card:nth-child(4) { animation-delay: 0.4s; }
-
-.stats-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.6s;
-}
-
-.stats-card:hover {
-  transform: translateY(-10px);
-  box-shadow: var(--shadow-hover);
-}
-
-.stats-card:hover::before {
-  left: 100%;
-}
-
-.stats-icon {
-  width: 60px;
-  height: 60px;
-  border-radius: 15px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
-  color: white;
-  transition: var(--transition);
-}
-
-.stats-icon.income {
-  background: var(--success-gradient);
-}
-
-.stats-icon.expense {
-  background: var(--danger-gradient);
-}
-
-.stats-icon.budget {
-  background: var(--primary-gradient);
-}
-
-.stats-icon.remaining {
-  background: var(--warning-gradient);
-}
-
-.stats-card:hover .stats-icon {
-  transform: rotate(360deg) scale(1.1);
-}
-
-.stats-label {
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-
-.stats-value {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
-}
-
-.stats-change {
-  font-size: 0.85rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.stats-change.positive {
-  color: #48bb78;
-}
-
-.stats-change.negative {
-  color: #f56565;
-}
-
-/* Glass Cards */
-.glass-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius);
-  box-shadow: var(--shadow-light);
-  transition: var(--transition);
-  animation: slideUp 0.8s ease-out;
-  overflow: hidden;
-}
-
-.glass-card:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-hover);
-}
-
-.card-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.card-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.card-title i {
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* Filter Section */
-.filter-section {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--border-radius);
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: var(--shadow-light);
-  animation: slideUp 0.6s ease-out;
-}
-
-.form-label {
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
-}
-
-.form-control {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 12px;
-  padding: 0.75rem 1rem;
-  color: var(--text-primary);
-  font-weight: 500;
-  transition: var(--transition);
-}
-
-.form-control:focus {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
-  outline: none;
-}
-
-.btn-primary {
-  background: var(--primary-gradient);
-  border: none;
-  border-radius: 12px;
-  padding: 0.75rem 1.5rem;
-  font-weight: 600;
-  color: white;
-  transition: var(--transition);
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-primary::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  transition: left 0.6s;
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-}
-
-.btn-primary:hover::before {
-  left: 100%;
-}
-
-/* Tables */
-.table-responsive {
-  padding: 1.5rem;
-}
-
-.table {
-  color: var(--text-primary);
-  border-collapse: separate;
-  border-spacing: 0;
-}
-
-.table thead th {
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  padding: 1rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  position: sticky;
-  top: 0;
-}
-
-.table tbody tr {
-  transition: var(--transition);
-}
-
-.table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.1);
-  transform: scale(1.02);
-}
-
-.table td {
-  padding: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  vertical-align: middle;
-}
-
-/* Badges */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.badge-success {
-  background: var(--success-gradient);
-  color: white;
-}
-
-.badge-danger {
-  background: var(--danger-gradient);
-  color: white;
-}
-
-.badge-primary {
-  background: var(--primary-gradient);
-  color: white;
-}
-
-.chart-container {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 20px;
-        }
-
-        .chart-wrapper {
-            position: relative;
-            height: 400px;
-        }
-
-        .table-container {
-            background: white;
-            border-radius: 12px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        .data-table th,
-        .data-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .data-table th {
-            background: #f8fafc;
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .data-table tbody tr:hover {
-            background-color: #f1f5f9;
-        }
-
-        .expense-amount {
-            color: #fc5c7d;
-            font-weight: 600;
-        }
-
-        .budget-amount {
-            color: #6a82fb;
-            font-weight: 600;
-        }
-
-/* Animations */
-@keyframes slideDown {
-  from {
-    opacity: 0;
-    transform: translateY(-30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* DataTables Styling */
-.dataTables_wrapper {
-  color: var(--text-primary);
-}
-
-.dataTables_filter input {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  padding: 0.5rem;
-  color: var(--text-primary);
-  margin-left: 0.5rem;
-}
-
-.dataTables_length select {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
-  padding: 0.25rem;
-  color: var(--text-primary);
-}
-
-.dataTables_paginate .paginate_button {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  border-radius: 8px !important;
-  color: var(--text-primary) !important;
-  margin: 0 2px;
-  transition: var(--transition);
-}
-
-.dataTables_paginate .paginate_button:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  transform: translateY(-2px);
-}
-
-.dataTables_paginate .paginate_button.current {
-  background: var(--primary-gradient) !important;
-  color: white !important;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .container-fluid {
-    padding: 1rem;
-  }
-  
-  .dashboard-title {
-    font-size: 2rem;
-  }
-  
-  .stats-card {
-    padding: 1.5rem;
-  }
-  
-  .stats-value {
-    font-size: 1.5rem;
-  }
-  
-  .card-header {
-    padding: 1rem;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  
-  .chart-container {
-    height: 300px;
-    padding: 1rem;
-  }
-}
-
-/* Hover Effects for Interactive Elements */
-.stats-card, .glass-card, .btn-primary, .badge {
-  cursor: pointer;
-}
-
-/* Loading Animation */
-.loading {
-  position: relative;
-  overflow: hidden;
-}
-
-.loading::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
-  animation: loading 1.5s infinite;
-}
-
-@keyframes loading {
-  0% { left: -100%; }
-  100% { left: 100%; }
-}
-
-/* Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-
-/* Focus States for Accessibility */
-.form-control:focus,
-.btn-primary:focus,
-.stats-card:focus {
-  outline: 2px solid rgba(255, 255, 255, 0.5);
-  outline-offset: 2px;
-}
-</style>
-
-<div class="container-fluid py-4"> <div class="dashboard-header">
-        <h1 class="dashboard-title">
-            <i class="fas fa-chart-line me-3"></i>
-            Budget Tracker Dashboard
-        </h1>
-    </div>
-
-    <div class="row g-4 mb-5">
-        <div class="col-xl-3 col-md-6 col-sm-12">
-            <div class="stats-card income">
-                <div class="stats-icon income">
-                    <i class="fas fa-coins"></i>
-                </div>
-                <div class="stats-label">Total Income</div>
-                <div class="stats-value">M{{ number_format($totalIncome, 2) }}</div>
-                <div class="stats-change {{ $incomePercentageChange >= 0 ? 'positive' : 'negative' }}">
-                    <i class="fas fa-{{ $incomePercentageChange >= 0 ? 'trending-up' : 'trending-down' }}"></i>
-                    {{ number_format($incomePercentageChange) }}% since last month
-                </div>
-            </div>
-        </div>
+    :root {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #64748b;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-green: #10b981;
+      --accent-orange: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-cyan: #06b6d4;
+      --accent-indigo: #6366f1;
+      --border: #e2e8f0;
+      --shadow: 0 1px 3px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.08);
+    }
     
-        <div class="col-xl-3 col-md-6 col-sm-12">
-            <div class="stats-card expense">
-                <div class="stats-icon expense">
-                    <i class="fas fa-receipt"></i>
-                </div>
-                <div class="stats-label">Total Expenses</div>
-                <div class="stats-value">M{{ number_format($totalExpenses, 2) }}</div>
-                <div class="stats-change {{ $expensesPercentageChange >= 0 ? 'negative' : 'positive' }}">
-                    <i class="fas fa-{{ $expensesPercentageChange >= 0 ? 'arrow-up' : 'arrow-down' }}"></i>
-                    {{ number_format($expensesPercentageChange) }}% since last month
-                </div>
-            </div>
-        </div>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
     
-        <div class="col-xl-3 col-md-6 col-sm-12">
-            <div class="stats-card budget">
-                <div class="stats-icon budget">
-                    <i class="fas fa-chart-pie"></i>
-                </div>
-                <div class="stats-label">Monthly Budget</div>
-                <div class="stats-value">M{{ number_format($monthlyBudget, 2) }}</div>
-                <div class="stats-change {{ $budgetPercentageChange >= 0 ? 'positive' : 'negative' }}">
-                    <i class="fas fa-{{ $budgetPercentageChange >= 0 ? 'arrow-up' : 'arrow-down' }}"></i>
-                    {{ number_format($budgetPercentageChange) }}% since last month
-                </div>
-            </div>
-        </div>
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+      line-height: 1.6;
+    }
     
-        <div class="col-xl-3 col-md-6 col-sm-12">
-            <div class="stats-card remaining">
-                <div class="stats-icon remaining">
-                    <i class="fas fa-wallet"></i>
-                </div>
-                <div class="stats-label">Remaining Budget</div>
-                <div class="stats-value">M{{ number_format($remainingBudget, 2) }}</div>
-                <div class="stats-change {{ $remainingBudget >= 0 ? 'positive' : 'negative' }}">
-                    <i class="fas fa-{{ $remainingBudget >= 0 ? 'check-circle' : 'exclamation-triangle' }}"></i>
-                    {{ $remainingBudget < 0 ? 'Overspent' : 'Remaining' }} this month
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="filter-section">
-        <form action="{{ route('dashboard.index') }}" method="GET" class="row g-3 align-items-end">
-            <div class="col-md-8">
-                <label for="month" class="form-label">
-                    <i class="fas fa-filter me-2"></i>Select Month
-                </label>
-                <input type="month" id="month" name="month" value="{{ old('month', $selectedMonth) }}" class="form-control">
-            </div>
-            <div class="col-md-4">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search me-2"></i>Filter Data
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="glass-card">
-                <!-- Card Header -->
-                <div class="card-header">
-                    <h5 class="card-title mb-0">
-                        <i class="fas fa-calendar-alt"></i> Summary
-                    </h5>
-                </div>
+    .dashboard-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
     
-                <!-- Table Container -->
-                <div class="table-container" style="overflow-x: auto;">
-                    <table class="data-table table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Category</th>
-                                <th>Average Spent</th>
-                                <th>vs Average</th>
-                            </tr>
-                        </thead>
-                        <tbody id="dataTableBody">
-                            <!-- Table rows will be populated by JavaScript -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+    /* Header */
+    .page-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
     
+    .page-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .page-subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+    }
+    
+    /* Filter Bar */
+    .filter-bar {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+      display: flex;
+      gap: 1rem;
+      align-items: end;
+      box-shadow: var(--shadow);
+    }
+    
+    .filter-group {
+      flex: 1;
+    }
+    
+    .filter-label {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+    
+    .filter-input {
+      width: 100%;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+    
+    .filter-input:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      background: rgba(59, 130, 246, 0.05);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .btn-filter {
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      padding: 0.75rem 2rem;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-filter:hover {
+      background: #2563eb;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Quick Stats Grid */
+    .quick-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+    
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--color-start), var(--color-end));
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .stat-card:hover::before {
+      opacity: 1;
+    }
+    
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+    }
+    
+    .stat-label {
+      color: var(--text-secondary);
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      color: white;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    
+    .stat-change {
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+      color: var(--text-secondary);
+    }
+    
+    .change-positive { color: var(--accent-green); }
+    .change-negative { color: var(--accent-red); }
+    
+    /* Insights Section */
+    .insights-panel {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow);
+    }
+    
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .insight-item {
+      background: var(--bg-tertiary);
+      padding: 1rem 1.25rem;
+      border-radius: 12px;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+    }
+    
+    .insight-item:hover {
+      background: #e2e8f0;
+      transform: translateX(4px);
+    }
+    
+    .insight-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .insight-text {
+      flex: 1;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+    }
+    
+    .insight-value {
+      font-weight: 600;
+      color: var(--accent-blue);
+    }
+    
+    /* Chart Cards */
+    .chart-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .chart-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+    
+    .chart-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .chart-container {
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      padding: 1.5rem;
+      height: 350px;
+    }
+    
+    /* Spending Breakdown */
+    .spending-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .spending-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .spending-label {
+      min-width: 140px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+    
+    .spending-bar {
+      flex: 1;
+      height: 40px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid var(--border);
+    }
+    
+    .spending-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-start), var(--color-end));
+      display: flex;
+      align-items: center;
+      padding: 0 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      color: white;
+    }
+    
+    .spending-amount {
+      min-width: 100px;
+      text-align: right;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    
+    /* Day of Week Cards */
+    .dow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .dow-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+      transition: all 0.2s;
+      box-shadow: var(--shadow);
+    }
+    
+    .dow-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-lg);
+    }
+    
+    .dow-name {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .dow-amount {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+    
+    .dow-count {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+    
+    /* Alert Box */
+    .alert-warning {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: var(--shadow);
+    }
+    
+    .alert-icon {
+      width: 48px;
+      height: 48px;
+      background: var(--accent-red);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      color: white;
+    }
+    
+    .alert-content strong {
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 1.05rem;
+      color: var(--text-primary);
+    }
+    
+    .alert-content {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+    }
+    
+    /* Transactions Table */
+    .transactions-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      .chart-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .filter-bar {
+        flex-direction: column;
+      }
+    
+      .dow-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      }
+    }
+    </style>
 
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="page-header">
+    <h1 class="page-title">Your Money Detective</h1>
+    <p class="page-subtitle">Track your spending and master your budget</p>
+  </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-lg-6">
-            <div class="glass-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-calendar-week"></i>
-                        Weekly Breakdown ({{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }})
-                    </h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Week</th>
-                                <th>Total Expenses (M)</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($weeklyBreakdown as $week)
-                                <tr>
-                                    <td>{{ $week['week_range'] }}</td>
-                                    <td><strong>M{{ number_format($week['total_expense'], 2) }}</strong></td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="text-center text-muted py-3">No weekly expenses found for this month.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  <!-- Alert for Overspending -->
+  @if($remainingBudget < 0)
+  <div class="alert-warning">
+    <div class="alert-icon">
+      <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <div class="alert-content">
+      <strong>Budget Alert!</strong>
+      You've exceeded your monthly budget by M{{ number_format(abs($remainingBudget), 2) }}
+    </div>
+  </div>
+  @endif
+
+  <!-- Filter -->
+  <form action="{{ route('dashboard.index') }}" method="GET" class="filter-bar">
+    <div class="filter-group">
+      <label class="filter-label">
+        <i class="fas fa-calendar-alt"></i> Select Month
+      </label>
+      <input type="month" name="month" value="{{ old('month', $selectedMonth) }}" class="filter-input">
+    </div>
+    <button type="submit" class="btn-filter">
+      <i class="fas fa-sync-alt"></i> Update
+    </button>
+  </form>
+
+  <!-- Quick Stats -->
+  <div class="quick-stats">
+    <div class="stat-card" style="--color-start: #ef4444; --color-end: #dc2626;">
+      <div class="stat-header">
+        <span class="stat-label">Total Spent</span>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+          <i class="fas fa-arrow-down"></i>
         </div>
-
-        <div class="col-lg-6">
-            <div class="glass-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-repeat"></i>
-                        Top 5 Expenses
-                    </h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th>Total Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($topExpenses as $expense)
-                                <tr>
-                                    <td>{{ $expense['description'] }}</td>
-                                    <td><strong>M{{ number_format($expense['total_amount'], 2) }}</strong></td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="2" class="text-center py-4">
-                                        <i class="fas fa-inbox fa-3x text-light-muted mb-3"></i>
-                                        <p class="text-muted">No top expenses found.</p>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-    <div class="row g-4 mb-4">
-        <div class="col-lg-7">
-            <div class="glass-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-chart-bar"></i>
-                        Expense Overview
-                    </h5>
-                </div>
-                <div class="chart-container">
-                    <div class="chart-wrapper">
-                        <canvas id="expenseChart"></canvas>
-                    </div>
-                </div>
-            
-              
-            
-            </div>
-            
-        </div>
-
-        <div class="col-lg-5">
-            <div class="glass-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-chart-pie"></i>
-                        Budget Status
-                    </h5>
-                </div>
-                <div class="chart-container">
-                    <canvas id="budgetRingChart"></canvas>
-                </div>
-            </div>
-        </div>
+      </div>
+      <div class="stat-value">M{{ number_format($totalExpenses, 2) }}</div>
+      <div class="stat-change {{ $expensesPercentageChange >= 0 ? 'change-negative' : 'change-positive' }}">
+        <i class="fas fa-arrow-{{ $expensesPercentageChange >= 0 ? 'up' : 'down' }}"></i>
+        {{ number_format(abs($expensesPercentageChange), 1) }}% vs last month
+      </div>
     </div>
 
-    <div class="row g-4 mb-4">
-        <div class="col-12">
-            <div class="glass-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-chart-line"></i>
-                        Expense vs Budget Overview
-                    </h5>
-                    <select id="filter" class="form-control" style="width: auto; min-width: 150px;" onchange="updateChart()">
-                        <option value="6" {{ request('filter', 12) == 6 ? 'selected' : '' }}>Last 6 Months</option>
-                        <option value="12" {{ request('filter', 12) == 12 ? 'selected' : '' }}>Last 12 Months</option>
-                    </select>
-                </div>
-                <div class="chart-container" style="height: 400px;">
-                    <canvas id="budgetExpenseChart"></canvas>
-                </div>
-                
-            </div>
+    @php
+      $topExpense = $topExpenses->first();
+    @endphp
+    <div class="stat-card" style="--color-start: #8b5cf6; --color-end: #7c3aed;">
+      <div class="stat-header">
+        <span class="stat-label">Biggest Expense</span>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+          <i class="fas fa-chart-pie"></i>
         </div>
+      </div>
+      <div class="stat-value" style="font-size: 1.25rem;">
+        {{ $topExpense['description'] ?? 'N/A' }}
+      </div>
+      <div class="stat-change">
+        M{{ number_format($topExpense['total_amount'] ?? 0, 2) }}
+      </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-12">
-            <div class="glass-card">
-                <div class="card-header">
-                    <h5 class="card-title">
-                        <i class="fas fa-list"></i>
-                        Recent Transactions
-                    </h5>
-                </div>
-                <div class="table-responsive">
-                    <table class="table" id="transactionsTable">
-                        <thead>
-                            <tr>
-                                <th>Description</th>
-                                <th>Type</th>
-                                <th>Amount</th>
-                                <th>Category</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($recentTransactions as $transaction)
-                                <tr>
-                                    <td>{{ $transaction->description ?? $transaction->source }}</td>
-                                    <td>
-                                        @if ($transaction->type == 'Expense')
-                                            <span class="badge badge-danger">
-                                                <i class="fas fa-arrow-down"></i>Expense
-                                            </span>
-                                        @else
-                                            <span class="badge badge-success">
-                                                <i class="fas fa-arrow-up"></i>Income
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td><strong>M{{ number_format(abs($transaction->amount), 2) }}</strong></td>
-                                    <td>
-                                        <span class="badge badge-primary">
-                                            {{ $transaction->category->name ?? 'Uncategorized' }}
-                                        </span>
-                                    </td>
-                                    <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted py-3">No recent transactions found.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    <div class="stat-card" style="--color-start: #10b981; --color-end: #059669;">
+      <div class="stat-header">
+        <span class="stat-label">Remaining Budget</span>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+          <i class="fas fa-wallet"></i>
         </div>
+      </div>
+      <div class="stat-value">M{{ number_format($remainingBudget, 2) }}</div>
+      <div class="stat-change {{ $remainingBudget >= 0 ? 'change-positive' : 'change-negative' }}">
+        <i class="fas fa-{{ $remainingBudget >= 0 ? 'check-circle' : 'exclamation-triangle' }}"></i>
+        {{ $remainingBudget >= 0 ? 'On track' : 'Over budget' }}
+      </div>
     </div>
+
+    <div class="stat-card" style="--color-start: #3b82f6; --color-end: #2563eb;">
+      <div class="stat-header">
+        <span class="stat-label">Daily Average</span>
+        <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb);">
+          <i class="fas fa-calendar-day"></i>
+        </div>
+      </div>
+      <div class="stat-value">M{{ number_format($totalExpenses / max(date('d'), 1), 2) }}</div>
+      <div class="stat-change">
+        Per day this month
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Insights -->
+  <div class="insights-panel">
+    <h3 class="section-title">
+      <i class="fas fa-lightbulb" style="color: var(--accent-orange);"></i>
+      Key Insights
+    </h3>
+    
+    <div class="insight-item">
+      <div class="insight-icon" style="background: rgba(59, 130, 246, 0.1);">
+        <i class="fas fa-receipt" style="color: var(--accent-blue);"></i>
+      </div>
+      <div class="insight-text">
+        You spent <span class="insight-value">M{{ number_format($totalExpenses, 2) }}</span> over <span class="insight-value">{{ $recentTransactions->count() }}</span> transactions
+      </div>
+    </div>
+
+    @if ($topExpenses->isNotEmpty())
+    @php
+      $topExpense = $topExpenses->first();
+    @endphp
+    <div class="insight-item">
+      <div class="insight-icon" style="background: rgba(139, 92, 246, 0.1);">
+        <i class="fas fa-star" style="color: var(--accent-purple);"></i>
+      </div>
+      <div class="insight-text">
+        Your biggest expense was 
+        <span class="insight-value">{{ $topExpense['description'] }}</span> 
+        (M{{ number_format($topExpense['total_amount'], 2) }})
+      </div>
+    </div>
+    @else
+    <div class="insight-item">
+      <div class="insight-icon" style="background: rgba(239, 68, 68, 0.1);">
+        <i class="fas fa-exclamation-circle" style="color: #ef4444;"></i>
+      </div>
+      <div class="insight-text">
+        No expenses recorded yet.
+      </div>
+    </div>
+    @endif
+
+    <div class="insight-item">
+      <div class="insight-icon" style="background: rgba(16, 185, 129, 0.1);">
+        <i class="fas fa-chart-line" style="color: var(--accent-green);"></i>
+      </div>
+      <div class="insight-text">
+        You spend an average of <span class="insight-value">M{{ number_format($totalExpenses / max(date('d'), 1), 2) }}</span> per day
+      </div>
+    </div>
+
+    @if($remainingBudget < 0)
+    <div class="insight-item" style="border-color: rgba(239, 68, 68, 0.3);">
+      <div class="insight-icon" style="background: rgba(239, 68, 68, 0.1);">
+        <i class="fas fa-exclamation-triangle" style="color: var(--accent-red);"></i>
+      </div>
+      <div class="insight-text">
+        You need to reduce spending by <span class="insight-value" style="color: var(--accent-red);">M{{ number_format(abs($remainingBudget), 2) }}</span> to stay on budget
+      </div>
+    </div>
+    @endif
+  </div>
+
+    <!-- Day of Week Spending -->
+    @php
+    $dayOfWeekSpending = $recentTransactions->where('type', 'Expense')->groupBy(function($transaction) {
+      return \Carbon\Carbon::parse($transaction->date)->format('l');
+    })->map(function($transactions) {
+      return [
+        'total' => $transactions->sum('amount'),
+        'count' => $transactions->count(),
+        'average' => $transactions->avg('amount')
+      ];
+    });
+    
+    $daysOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  @endphp
+
+  <div class="chart-card" style="margin-bottom: 2rem;">
+    <div class="chart-header">
+      <h3 class="chart-title">
+        <i class="fas fa-calendar-week" style="color: var(--accent-indigo);"></i>
+        Spending by Day of Week
+      </h3>
+    </div>
+    <div class="dow-grid">
+      @foreach($daysOrder as $day)
+        @php
+          $dayData = $dayOfWeekSpending->get($day, ['total' => 0, 'count' => 0]);
+        @endphp
+        <div class="dow-card">
+          <div class="dow-name">{{ substr($day, 0, 3) }}</div>
+          <div class="dow-amount">M{{ number_format($dayData['total'], 0) }}</div>
+          <div class="dow-count">{{ $dayData['count'] }} transactions</div>
+        </div>
+      @endforeach
+    </div>
+  </div>
+
+
+
+  <!-- Charts -->
+  <div class="chart-grid">
+      <!-- Charts -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">
+            <i class="fas fa-chart-line" style="color: var(--accent-cyan);"></i>
+            Daily Spending Trend
+          </h3>
+        </div>
+        <div class="chart-container">
+          <canvas id="dailyTrendChart"></canvas>
+        </div>
+      </div>
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">
+          <i class="fas fa-chart-bar" style="color: var(--accent-blue);"></i>
+          Expense Overview
+        </h3>
+      </div>
+      <div class="chart-container">
+        <canvas id="expenseChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <h3 class="chart-title">
+          <i class="fas fa-chart-pie" style="color: var(--accent-purple);"></i>
+          Budget Status
+        </h3>
+      </div>
+      <div class="chart-container">
+        <canvas id="budgetRingChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Spending Breakdown -->
+  <div class="chart-card" style="margin-bottom: 2rem;">
+    <div class="chart-header">
+      <h3 class="chart-title">
+        <i class="fas fa-layer-group" style="color: var(--accent-green);"></i>
+        Where Your Money Goes
+      </h3>
+    </div>
+    <div class="spending-list">
+      @foreach($labels as $index => $label)
+        @php
+          $amount = $data[$index] ?? 0;
+          $percentage = $totalExpenses > 0 ? ($amount / $totalExpenses) * 100 : 0;
+          $colors = [
+            ['#ef4444', '#dc2626'],
+            ['#3b82f6', '#2563eb'],
+            ['#10b981', '#059669'],
+            ['#f59e0b', '#d97706'],
+            ['#8b5cf6', '#7c3aed'],
+            ['#ec4899', '#db2777']
+          ];
+          $colorSet = $colors[$index % count($colors)];
+        @endphp
+        <div class="spending-item">
+          <div class="spending-label">{{ $label }}</div>
+          <div class="spending-bar">
+            <div class="spending-fill" style="width: {{ $percentage }}%; --color-start: {{ $colorSet[0] }}; --color-end: {{ $colorSet[1] }}; background: linear-gradient(90deg, {{ $colorSet[0] }}, {{ $colorSet[1] }});">
+              {{ number_format($percentage, 1) }}%
+            </div>
+          </div>
+          <div class="spending-amount">M{{ number_format($amount, 2) }}</div>
+        </div>
+      @endforeach
+    </div>
+  </div>
+
+  <!-- Top Spending Destinations -->
+  <div class="chart-card" style="margin-bottom: 2rem;">
+    <div class="chart-header">
+      <h3 class="chart-title">
+        <i class="fas fa-fire" style="color: var(--accent-red);"></i>
+        Top Spending Destinations
+      </h3>
+    </div>
+    <div class="spending-list">
+      @foreach($topExpenses->take(10) as $index => $expense)
+        @php
+          $percentage = $totalExpenses > 0 ? ($expense['total_amount'] / $totalExpenses) * 100 : 0;
+        @endphp
+        <div class="spending-item">
+          <div class="spending-label">{{ $expense['description'] }}</div>
+          <div class="spending-bar">
+            <div class="spending-fill" style="width: {{ $percentage }}%; --color-start: #ef4444; --color-end: #dc2626; background: linear-gradient(90deg, #ef4444, #dc2626);">
+              {{ number_format($percentage, 1) }}%
+            </div>
+          </div>
+          <div class="spending-amount">M{{ number_format($expense['total_amount'], 2) }}</div>
+        </div>
+      @endforeach
+    </div>
+  </div>
+
+  <!-- Transactions Table -->
+  <div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">All Transactions</h5>
+    </div>
+    <div class="card-body">
+        <table id="transactionsTable" class="table table-bordered table-striped table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Type</th>
+                    <th>Category</th>
+                    <th>Amount (M)</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($recentTransactions as $transaction)
+                    <tr>
+                        <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d M Y') }}</td>
+                        <td>{{ $transaction->description }}</td>
+                        <td>
+                            <span class="badge {{ $transaction->type === 'Income' ? 'bg-success' : 'bg-danger' }}">
+                                {{ $transaction->type }}
+                            </span>
+                        </td>
+                        <td>{{ $transaction->category->name ?? 'N/A' }}</td>
+                        <td>{{ number_format($transaction->amount, 2) }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+  </div>
+
 </div>
+
 @endsection
 
 @section('scripts')
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+<!-- DataTables CSS -->
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+<link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
 
+<!-- DataTables JS -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- Export Buttons -->
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        // Budget Ring Chart
-        const ctxRing = document.getElementById('budgetRingChart').getContext('2d');
-        const budgetRingChart = new Chart(ctxRing, {
-            type: 'doughnut',
-            data: {
-                labels: ['Spent', 'Remaining'],
-                datasets: [{
-                    label: 'Budget vs Expenses',
-                    data: [{{ $totalExpenses }}, {{ max(0, $monthlyBudget - $totalExpenses) }}], // Ensure remaining is not negative
-                    backgroundColor: ['#FC5C7D', '#6A82FB'], // Pink for spent, blue for remaining
-                    borderColor: 'rgba(255, 255, 255, 0.8)', // White border for separation
-                    borderWidth: 2,
-                    hoverOffset: 8
-                }]
+$(document).ready(function() {
+    $('#transactionsTable').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
+            {
+                extend: 'excelHtml5',
+                title: 'All Transactions',
+                className: 'btn btn-success btn-sm'
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false, // Allows flexible height
-                cutout: '75%', // Modern property for cutoutPercentage
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: {
-                            font: {
-                                size: 14,
-                                family: 'Inter, sans-serif'
-                            },
-                            color: '#333'
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
-                        titleFont: { size: 16, weight: 'bold', family: 'Inter, sans-serif' },
-                        bodyFont: { size: 14, family: 'Inter, sans-serif' },
-                        padding: 12,
-                        displayColors: true,
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                let value = parseFloat(tooltipItem.raw).toFixed(2);
-                                return tooltipItem.label + ': M' + value;
-                            }
-                        }
-                    }
-                }
+            {
+                extend: 'csvHtml5',
+                title: 'All Transactions',
+                className: 'btn btn-primary btn-sm'
+            },
+            {
+                extend: 'print',
+                className: 'btn btn-secondary btn-sm'
             }
-        });
+        ],
+        order: [[0, 'desc']],
+        pageLength: 10,
+        responsive: true,
+    });
+});
+</script>
 
-        const labels = @json($labels); // Categories
-        const expenseData = @json($data); // Expenses dataset
-        const budgetData = @json($budgetsData); // Budgets dataset
-
-        // Create the chart with your exact configuration
-        const ctxExpense = document.getElementById('expenseChart').getContext('2d');
-        const expenseChart = new Chart(ctxExpense, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [
-            {
-                label: 'Expenses',
-                data: expenseData,
-                backgroundColor: 'rgba(252, 92, 125, 0.8)',
-                borderColor: 'rgba(252, 92, 125, 1)',
-                borderWidth: 1,
-                borderRadius: 8,
-                hoverBackgroundColor: 'rgba(252, 92, 125, 1)'
-            },
-            {
-                label: 'Budget',
-                data: budgetData,
-                backgroundColor: 'rgba(106, 130, 251, 0.6)',
-                borderColor: 'rgba(106, 130, 251, 1)',
-                borderWidth: 1,
-                borderRadius: 8,
-                hoverBackgroundColor: 'rgba(106, 130, 251, 0.8)'
-            },
-            {
-                label: '6-Month Average',
-                data: @json($averagesData), // Add this line
-                type: 'line',
-                borderColor: 'rgba(34, 197, 94, 0.8)',
-                backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                borderWidth: 2,
-                pointRadius: 4,
-                pointBackgroundColor: 'rgba(34, 197, 94, 1)',
-                fill: false
-            }
-        ]
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+<script>
+// Chart configurations
+const chartDefaults = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: 'top',
+      labels: { color: '#64748b', font: { size: 12, weight: '500' } }
     },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            font: { size: 14, family: 'Inter, sans-serif' },
-                            color: '#333'
-                        }
-                    },
-                    tooltip: {
-                        backgroundColor: 'rgba(0,0,0,0.8)',
-                        titleFont: { size: 16, weight: 'bold', family: 'Inter, sans-serif' },
-                        bodyFont: { size: 14, family: 'Inter, sans-serif' },
-                        padding: 12,
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return tooltipItem.dataset.label + ': M' + parseFloat(tooltipItem.raw).toFixed(2);
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        grid: {
-                            display: false // Hide vertical grid lines
-                        },
-                        ticks: {
-                            font: { size: 12, family: 'Inter, sans-serif' },
-                            color: '#555'
-                        }
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.08)' // Lighter horizontal grid lines
-                        },
-                        ticks: {
-                            font: { size: 12, family: 'Inter, sans-serif' },
-                            color: '#555',
-                            callback: function(value) {
-                                return 'M' + value; // Add M currency
-                            }
-                        }
-                    }
-                }
-            }
-        });
-
-        // Populate the table
-        function populateTable() {
-    const tableBody = document.getElementById('dataTableBody');
-    const averageData = @json($averagesData);
-    
-    labels.forEach((label, index) => {
-        const expense = expenseData[index];
-        const budget = budgetData[index];
-        const average = averageData[index];
-        const difference = budget - expense;
-        const vsAverage = average > 0 ? ((expense - average) / average * 100).toFixed(1) : 0;
-        
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${label}</td>
-            <td class="average-amount text-muted">M${average.toFixed(2)}</td>
-           
-            <td style="color: ${vsAverage >= 0 ? '#ef4444' : '#10b981'}; font-weight: 600;">
-                ${vsAverage > 0 ? '+' : ''}${vsAverage}%
-            </td>
-        `;
-        tableBody.appendChild(row);
-    });
-}
-
-        // Initialize table
-        populateTable();
-
-        // Budget vs Expense Chart (Line Chart)
-        const budgetExpenseCanvas = document.getElementById('budgetExpenseChart');
-
-        // --- DEBUGGING LOGS ---
-        console.log('Attempting to initialize budgetExpenseChart...');
-        console.log('Canvas element:', budgetExpenseCanvas);
-        console.log('Months data:', @json($months));
-        console.log('Monthly Budgets data:', @json($monthlyBudgets));
-        console.log('Monthly Expenses data:', @json($monthlyExpenses));
-        // --- END DEBUGGING LOGS ---
-
-        if (budgetExpenseCanvas) { // Only proceed if canvas element is found
-            const ctxBudgetExpense = budgetExpenseCanvas.getContext('2d');
-            const budgetExpenseChart = new Chart(ctxBudgetExpense, {
-                type: 'line',
-                data: {
-                    labels: @json($months),
-                    datasets: [
-                        {
-                            label: 'Total Budget',
-                            data: @json($monthlyBudgets),
-                            borderColor: '#6A82FB', /* Blue line for budget */
-                            backgroundColor: 'rgba(106, 130, 251, 0.2)', /* Lighter fill */
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4, // Smooth curve
-                            pointRadius: 5, /* Larger points */
-                            pointBackgroundColor: '#6A82FB',
-                            pointBorderColor: '#fff',
-                            pointHoverRadius: 7
-                        },
-                        {
-                            label: 'Total Expenses',
-                            data: @json($monthlyExpenses),
-                            borderColor: '#FC5C7D', /* Pink line for expenses */
-                            backgroundColor: 'rgba(252, 92, 125, 0.2)', /* Lighter fill */
-                            borderWidth: 3,
-                            fill: true,
-                            tension: 0.4,
-                            pointRadius: 5,
-                            pointBackgroundColor: '#FC5C7D',
-                            pointBorderColor: '#fff',
-                            pointHoverRadius: 7
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: true,
-                            position: 'top',
-                            labels: {
-                                font: { size: 14, family: 'Inter, sans-serif' },
-                                color: '#333'
-                            }
-                        },
-                        tooltip: {
-                            backgroundColor: 'rgba(0,0,0,0.8)',
-                            titleFont: { size: 16, weight: 'bold', family: 'Inter, sans-serif' },
-                            bodyFont: { size: 14, family: 'Inter, sans-serif' },
-                            padding: 12,
-                            callbacks: {
-                                label: function(tooltipItem) {
-                                    return tooltipItem.dataset.label + ': M' + parseFloat(tooltipItem.raw).toFixed(2);
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        x: {
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                font: { size: 12, family: 'Inter, sans-serif' },
-                                color: '#555'
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: {
-                                color: 'rgba(0, 0, 0, 0.08)'
-                            },
-                            ticks: {
-                                font: { size: 12, family: 'Inter, sans-serif' },
-                                color: '#555',
-                                callback: function(value) {
-                                    return 'M' + value;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        } else {
-            console.error("Error: Canvas element with ID 'budgetExpenseChart' not found.");
-        }
-    });
-
-    // DataTables Initialization
-    $(document).ready(function() {
-        $('#transactionsTable').DataTable({
-            "paging": true,
-            "searching": true,
-            "ordering": true,
-            "info": true,
-            "lengthChange": true,
-            "autoWidth": false,
-            "responsive": true,
-            "columnDefs": [
-                { "width": "25%", "targets": 0 },
-                { "width": "15%", "targets": 1 },
-                { "width": "15%", "targets": 2 },
-                { "width": "20%", "targets": 3 },
-                { "width": "15%", "targets": 4 }
-            ],
-            "language": {
-                "lengthMenu": "Show _MENU_ entries",
-                "search": "Search:",
-                "info": "Showing _START_ to _END_ of _TOTAL_ entries",
-                "infoEmpty": "Showing 0 to 0 of 0 entries",
-                "infoFiltered": "(filtered from _MAX_ total entries)",
-                "paginate": {
-                    "first": "First",
-                    "last": "Last",
-                    "next": "Next",
-                    "previous": "Previous"
-                }
-            }
-        });
-    });
-
-    // Function to update the chart based on the filter
-    function updateChart() {
-        let filter = document.getElementById("filter").value;
-        window.location.href = `?filter=${filter}`; // Reload with new filter
+    tooltip: {
+      backgroundColor: '#ffffff',
+      titleColor: '#0f172a',
+      bodyColor: '#64748b',
+      borderColor: '#e2e8f0',
+      borderWidth: 1,
+      padding: 12,
+      displayColors: true
     }
+  }
+};
+
+// 1. Expense Chart
+new Chart(document.getElementById('expenseChart'), {
+  type: 'bar',
+  data: {
+    labels: @json($labels),
+    datasets: [
+      {
+        label: 'Expenses',
+        data: @json($data),
+        backgroundColor: '#ef4444',
+        borderRadius: 8,
+        borderSkipped: false
+      },
+      {
+        label: 'Budget',
+        data: @json($budgetsData),
+        backgroundColor: '#3b82f6',
+        borderRadius: 8,
+        borderSkipped: false
+      }
+    ]
+  },
+  options: {
+    ...chartDefaults,
+    scales: {
+      x: { 
+        grid: { display: false, color: '#e2e8f0' },
+        ticks: { color: '#64748b', font: { weight: '500' } }
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: '#e2e8f0' },
+        ticks: { 
+          color: '#64748b',
+          font: { weight: '500' },
+          callback: (value) => 'M' + value 
+        }
+      }
+    }
+  }
+});
+
+// 2. Budget Ring Chart
+new Chart(document.getElementById('budgetRingChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Spent', 'Remaining'],
+    datasets: [{
+      data: [{{ $totalExpenses }}, {{ max(0, $monthlyBudget - $totalExpenses) }}],
+      backgroundColor: ['#ef4444', '#3b82f6'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    ...chartDefaults,
+    cutout: '70%',
+    plugins: {
+      ...chartDefaults.plugins,
+      tooltip: {
+        ...chartDefaults.plugins.tooltip,
+        callbacks: {
+          label: (context) => context.label + ': M' + context.parsed.toFixed(2)
+        }
+      }
+    }
+  }
+});
 </script>
 @endsection

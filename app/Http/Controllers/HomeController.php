@@ -109,7 +109,7 @@ class HomeController extends Controller
         $allCategories = Category::all();
     
         // Calculate historical averages for each category (ALL TIME data)
-        $categoryAverages = collect();
+        $categoryAverages = $categoryAverages ?? collect();
         
         foreach ($allCategories as $category) {
             // Get ALL historical expenses for this category (no date restriction)
@@ -190,6 +190,9 @@ class HomeController extends Controller
                 'vs_average' => isset($expenseData['vs_average']) ? $expenseData['vs_average'] : 0
             ];
         });
+
+        $monthlyBudget = max(0, $monthlyBudget); // avoid null or negative
+$remainingBudget = $monthlyBudget > 0 ? ($monthlyBudget - $totalExpenses) : 0;
     
         // Calculate the remaining budget
         $remainingBudget = $monthlyBudget - $totalExpenses;
@@ -307,15 +310,40 @@ class HomeController extends Controller
             ])
             ->sortByDesc('total_amount')
             ->take(5);
+
+            if ($topExpenses->isEmpty()) {
+                $topExpenses = collect([[
+                    'description' => 'N/A',
+                    'frequency' => 0,
+                    'total_amount' => 0,
+                ]]);
+            }
     
-        return view('dashboard', compact(
-            'totalIncome', 'totalExpenses', 'netSavings', 'monthlyBudget', 
-            'incomePercentageChange', 'expensesPercentageChange', 
-            'recentTransactions', 'labels', 'data', 'remainingBudget', 'budgetsData', 
-            'selectedMonth', 'budgetPercentageChange', 'months', 'monthlyBudgets', 
-            'monthlyExpenses', 'averageWeeklySpent', 'weeklyBreakdown', 'topExpenses',
-            'finalData', 'categoryAverages', 'averagesData'
-        ));
+            return view('dashboard', [
+                'totalIncome' => $totalIncome,
+                'totalExpenses' => $totalExpenses,
+                'netSavings' => $netSavings,
+                'monthlyBudget' => $monthlyBudget,
+                'incomePercentageChange' => $incomePercentageChange,
+                'expensesPercentageChange' => $expensesPercentageChange,
+                'recentTransactions' => $recentTransactions,
+                'labels' => $labels,
+                'data' => $data,
+                'remainingBudget' => $remainingBudget,
+                'budgetsData' => $budgetsData,
+                'selectedMonth' => $selectedMonth,
+                'budgetPercentageChange' => $budgetPercentageChange,
+                'months' => $months,
+                'monthlyBudgets' => $monthlyBudgets,
+                'monthlyExpenses' => $monthlyExpenses,
+                'averageWeeklySpent' => $averageWeeklySpent,
+                'weeklyBreakdown' => $weeklyBreakdown,
+                'topExpenses' => $topExpenses,
+                'finalData' => $finalData,
+                'categoryAverages' => $categoryAverages,
+                'averagesData' => $averagesData,
+            ]);
+            
     }
 /**
  * Predict future expenses based on historical data.
