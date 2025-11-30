@@ -4,30 +4,100 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class GeminiAIService
 {
     private $apiKey;
     private $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
     private $model = 'gemini-2.0-flash-exp';
+    private $lastRequestTime = null;
+    private $minRequestInterval = 4; // 15 requests per minute = 4 seconds between requests
+    private $maxRetries = 3;
 
     public function __construct()
     {
         $this->apiKey = env('GEMINI_API_KEY');
         
         if (empty($this->apiKey)) {
-            Log::error('GEMINI_API_KEY is not set');
+            Log::error('GEMINI_API_KEY is not set in environment');
+        } else {
+            Log::info('GeminiAIService initialized', [
+                'model' => $this->model,
+                'api_key_length' => strlen($this->apiKey)
+            ]);
         }
     }
 
     public function analyzeBudgetData($data)
     {
+        $startTime = microtime(true);
+        $requestId = uniqid('gemini_', true);
+        
+        Log::info('Starting budget analysis', [
+            'request_id' => $requestId,
+            'data_keys' => array_keys($data),
+            'total_income' => $data['totalIncome'] ?? 0,
+            'total_expenses' => $data['totalExpenses'] ?? 0,
+            'transaction_count' => count($data['allTransactions'] ?? [])
+        ]);
+
         if (empty($this->apiKey)) {
+            Log::error('Analysis aborted: API key missing', ['request_id' => $requestId]);
+            return $this->getFallbackResponse();
+        }
+
+        // Create cache key based on data hash
+        $cacheKey = 'gemini_analysis_' . md5(json_encode($data));
+        
+        // Check cache first
+        if (Cache::has($cacheKey)) {
+            $cached = Cache::get($cacheKey);
+            Log::info('Returning cached analysis', [
+                'request_id' => $requestId,
+                'cache_key' => $cacheKey,
+                'cache_age_minutes' => Cache::get($cacheKey . '_timestamp') ? 
+                    round((time() - Cache::get($cacheKey . '_timestamp')) / 60, 2) : 'unknown'
+            ]);
+            return $cached;
+        }
+
+        // Check rate limit
+        $rateLimitKey = 'gemini_rate_limit_' . date('YmdHi');
+        $requestCount = Cache::get($rateLimitKey, 0);
+        
+        if ($requestCount >= 15) {
+            Log::warning('Rate limit exceeded', [
+                'request_id' => $requestId,
+                'current_count' => $requestCount,
+                'limit' => 15,
+                'period' => 'per_minute'
+            ]);
             return $this->getFallbackResponse();
         }
 
         try {
+            // Throttle request to prevent rate limiting
+            $this->throttleRequest($requestId);
+            
+            // Increment rate limit counter
+            Cache::put($rateLimitKey, $requestCount + 1, now()->addMinute());
+            Log::info('Rate limit check passed', [
+                'request_id' => $requestId,
+                'current_count' => $requestCount + 1,
+                'limit' => 15
+            ]);
+
             $prompt = $this->buildEnhancedAnalysisPrompt($data);
+            $promptLength = strlen($prompt);
+            $estimatedTokens = $promptLength / 4; // Rough estimate
+            
+            Log::info('Prompt generated', [
+                'request_id' => $requestId,
+                'prompt_length_chars' => $promptLength,
+                'estimated_tokens' => round($estimatedTokens),
+                'prompt_preview' => substr($prompt, 0, 200) . '...'
+            ]);
             
             $url = $this->baseUrl . $this->model . ':generateContent?key=' . $this->apiKey;
             
@@ -48,30 +118,214 @@ class GeminiAIService
                 ]
             ];
 
-            $response = Http::timeout(60)
-                ->withHeaders(['Content-Type' => 'application/json'])
-                ->post($url, $payload);
+            Log::info('Sending request to Gemini API', [
+                'request_id' => $requestId,
+                'url' => $this->baseUrl . $this->model . ':generateContent',
+                'model' => $this->model,
+                'config' => $payload['generationConfig']
+            ]);
 
-            if ($response->successful()) {
+            $response = $this->callGeminiAPIWithRetry($url, $payload, $requestId);
+
+            if ($response && $response->successful()) {
+                $responseTime = round((microtime(true) - $startTime) * 1000, 2);
                 $result = $response->json();
-                return $this->parseAIResponse($result);
+                
+                Log::info('Gemini API response received', [
+                    'request_id' => $requestId,
+                    'status' => $response->status(),
+                    'response_time_ms' => $responseTime,
+                    'response_size_bytes' => strlen($response->body()),
+                    'has_candidates' => isset($result['candidates'])
+                ]);
+
+                $parsed = $this->parseAIResponse($result, $requestId);
+                
+                // Cache the successful result
+                Cache::put($cacheKey, $parsed, now()->addHours(1));
+                Cache::put($cacheKey . '_timestamp', time(), now()->addHours(1));
+                
+                Log::info('Analysis completed successfully', [
+                    'request_id' => $requestId,
+                    'total_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                    'cached' => true,
+                    'recommendations_count' => count($parsed['recommendations'] ?? []),
+                    'insights_count' => count($parsed['insights'] ?? [])
+                ]);
+                
+                return $parsed;
             }
 
+            // Handle specific error codes
+            $statusCode = $response ? $response->status() : 0;
+            $responseBody = $response ? $response->body() : 'No response';
+            
             Log::error('Gemini API request failed', [
-                'status' => $response->status(),
-                'body' => $response->body()
+                'request_id' => $requestId,
+                'status_code' => $statusCode,
+                'response_body' => substr($responseBody, 0, 500),
+                'total_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
             ]);
             
             return $this->getFallbackResponse();
 
-        } catch (\Exception $e) {
-            Log::error('Gemini API exception', [
-                'message' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Connection error to Gemini API', [
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'total_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
             ]);
+            return $this->getFallbackResponse();
             
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            Log::error('Request exception from Gemini API', [
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+                'status' => $e->response ? $e->response->status() : 'unknown',
+                'total_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
+            ]);
+            return $this->getFallbackResponse();
+            
+        } catch (\Exception $e) {
+            Log::error('Unexpected exception in Gemini API service', [
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'total_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
+            ]);
             return $this->getFallbackResponse();
         }
+    }
+
+    private function throttleRequest($requestId)
+    {
+        if ($this->lastRequestTime !== null) {
+            $elapsed = microtime(true) - $this->lastRequestTime;
+            if ($elapsed < $this->minRequestInterval) {
+                $sleepTime = $this->minRequestInterval - $elapsed;
+                Log::info('Throttling request', [
+                    'request_id' => $requestId,
+                    'elapsed_seconds' => round($elapsed, 2),
+                    'sleep_seconds' => round($sleepTime, 2),
+                    'min_interval' => $this->minRequestInterval
+                ]);
+                usleep($sleepTime * 1000000);
+            }
+        }
+        $this->lastRequestTime = microtime(true);
+    }
+
+    private function callGeminiAPIWithRetry($url, $payload, $requestId)
+    {
+        $attempt = 0;
+        
+        while ($attempt < $this->maxRetries) {
+            $attempt++;
+            $attemptStartTime = microtime(true);
+            
+            try {
+                Log::info('API call attempt', [
+                    'request_id' => $requestId,
+                    'attempt' => $attempt,
+                    'max_retries' => $this->maxRetries
+                ]);
+
+                $response = Http::timeout(60)
+                    ->withHeaders([
+                        'Content-Type' => 'application/json',
+                        'X-Request-ID' => $requestId
+                    ])
+                    ->post($url, $payload);
+                
+                $attemptTime = round((microtime(true) - $attemptStartTime) * 1000, 2);
+                
+                if ($response->successful()) {
+                    Log::info('API call successful', [
+                        'request_id' => $requestId,
+                        'attempt' => $attempt,
+                        'response_time_ms' => $attemptTime,
+                        'status' => $response->status()
+                    ]);
+                    return $response;
+                }
+                
+                // Handle 429 Rate Limit
+                if ($response->status() === 429) {
+                    if ($attempt < $this->maxRetries) {
+                        $waitTime = pow(2, $attempt); // Exponential backoff: 2, 4, 8 seconds
+                        Log::warning('Rate limit hit, retrying', [
+                            'request_id' => $requestId,
+                            'attempt' => $attempt,
+                            'status' => 429,
+                            'wait_seconds' => $waitTime,
+                            'next_attempt' => $attempt + 1
+                        ]);
+                        sleep($waitTime);
+                        continue;
+                    } else {
+                        Log::error('Rate limit exceeded, max retries reached', [
+                            'request_id' => $requestId,
+                            'attempts' => $attempt,
+                            'status' => 429
+                        ]);
+                    }
+                }
+                
+                // Other error codes
+                Log::warning('API call failed', [
+                    'request_id' => $requestId,
+                    'attempt' => $attempt,
+                    'status' => $response->status(),
+                    'response_preview' => substr($response->body(), 0, 200)
+                ]);
+                
+                return $response;
+                
+            } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                Log::error('Connection failed on attempt', [
+                    'request_id' => $requestId,
+                    'attempt' => $attempt,
+                    'error' => $e->getMessage(),
+                    'attempt_time_ms' => round((microtime(true) - $attemptStartTime) * 1000, 2)
+                ]);
+                
+                if ($attempt < $this->maxRetries) {
+                    $waitTime = pow(2, $attempt);
+                    Log::info('Retrying after connection error', [
+                        'request_id' => $requestId,
+                        'wait_seconds' => $waitTime
+                    ]);
+                    sleep($waitTime);
+                    continue;
+                }
+                throw $e;
+                
+            } catch (\Exception $e) {
+                Log::error('Unexpected error on attempt', [
+                    'request_id' => $requestId,
+                    'attempt' => $attempt,
+                    'error' => $e->getMessage(),
+                    'error_class' => get_class($e)
+                ]);
+                
+                if ($attempt < $this->maxRetries) {
+                    sleep(pow(2, $attempt));
+                    continue;
+                }
+                throw $e;
+            }
+        }
+        
+        Log::error('All retry attempts exhausted', [
+            'request_id' => $requestId,
+            'total_attempts' => $attempt
+        ]);
+        
+        return null;
     }
 
     private function buildEnhancedAnalysisPrompt(array $data)
@@ -87,7 +341,7 @@ class GeminiAIService
         $prompt .= "Days Elapsed: " . ($data['daysElapsed'] ?? 0) . " / Days Remaining: " . ($data['daysRemaining'] ?? 0) . "\n";
         $prompt .= "Net Savings: M" . number_format(($data['totalIncome'] ?? 0) - ($data['totalExpenses'] ?? 0), 2) . "\n\n";
 
-        // INDIVIDUAL TRANSACTIONS - THIS WAS MISSING!
+        // INDIVIDUAL TRANSACTIONS
         if (!empty($data['allTransactions']) && is_array($data['allTransactions'])) {
             $prompt .= "=== ALL INDIVIDUAL TRANSACTIONS ===\n";
             $prompt .= "Total Transactions: " . count($data['allTransactions']) . "\n\n";
@@ -100,7 +354,6 @@ class GeminiAIService
                 $desc = strtolower(trim($txn['description'] ?? 'unknown'));
                 $cat = $txn['category'] ?? 'other';
                 $amt = floatval($txn['amount'] ?? 0);
-                $date = $txn['date'] ?? '';
                 
                 // Group by description
                 if (!isset($transactionsByItem[$desc])) {
@@ -312,11 +565,17 @@ JSON;
         return $prompt;
     }
 
-    private function parseAIResponse($result)
+    private function parseAIResponse($result, $requestId)
     {
         try {
             if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
                 $text = $result['candidates'][0]['content']['parts'][0]['text'];
+                $originalLength = strlen($text);
+                
+                Log::info('Parsing AI response', [
+                    'request_id' => $requestId,
+                    'response_length' => $originalLength
+                ]);
                 
                 // Clean up potential markdown formatting
                 $text = preg_replace('/```json\s*/i', '', $text);
@@ -326,6 +585,13 @@ JSON;
                 $decoded = json_decode($text, true);
                 
                 if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    Log::info('AI response parsed successfully', [
+                        'request_id' => $requestId,
+                        'has_predictions' => isset($decoded['predictions']),
+                        'recommendations_count' => count($decoded['recommendations'] ?? []),
+                        'insights_count' => count($decoded['insights'] ?? [])
+                    ]);
+                    
                     // Ensure all required keys exist
                     return [
                         'predictions' => $decoded['predictions'] ?? [],
@@ -338,16 +604,28 @@ JSON;
                 }
                 
                 Log::error('Failed to decode AI response JSON', [
-                    'error' => json_last_error_msg(),
+                    'request_id' => $requestId,
+                    'json_error' => json_last_error_msg(),
+                    'json_error_code' => json_last_error(),
+                    'text_length' => strlen($text),
                     'text_preview' => substr($text, 0, 500)
+                ]);
+            } else {
+                Log::error('AI response missing expected structure', [
+                    'request_id' => $requestId,
+                    'result_keys' => array_keys($result),
+                    'has_candidates' => isset($result['candidates'])
                 ]);
             }
             
             return $this->getFallbackResponse();
             
         } catch (\Exception $e) {
-            Log::error('Error parsing AI response', [
-                'message' => $e->getMessage()
+            Log::error('Exception while parsing AI response', [
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'line' => $e->getLine()
             ]);
             return $this->getFallbackResponse();
         }
@@ -355,6 +633,8 @@ JSON;
 
     private function getFallbackResponse()
     {
+        Log::info('Returning fallback response');
+        
         return [
             'predictions' => [
                 'monthEndTotal' => 0,
@@ -365,7 +645,7 @@ JSON;
             'recommendations' => [
                 [
                     'title' => 'AI Analysis Unavailable',
-                    'description' => 'Unable to generate AI insights at this time. Please check your API configuration.',
+                    'description' => 'Unable to generate AI insights at this time. Please check your API configuration or try again later.',
                     'priority' => 'low',
                     'category' => 'general',
                     'specificItems' => [],
@@ -374,7 +654,7 @@ JSON;
                 ]
             ],
             'insights' => [
-                'AI analysis is temporarily unavailable'
+                'AI analysis is temporarily unavailable. Please check logs for details.'
             ],
             'spendingPatternInsights' => [
                 'topSpendingItems' => [],
@@ -394,5 +674,57 @@ JSON;
                 'riskFactors' => []
             ]
         ];
+    }
+
+    /**
+     * Get current rate limit status
+     */
+    public function getRateLimitStatus()
+    {
+        $rateLimitKey = 'gemini_rate_limit_' . date('YmdHi');
+        $requestCount = Cache::get($rateLimitKey, 0);
+        
+        $status = [
+            'current_count' => $requestCount,
+            'limit' => 15,
+            'remaining' => max(0, 15 - $requestCount),
+            'resets_at' => date('Y-m-d H:i:s', strtotime('+1 minute', strtotime(date('Y-m-d H:i:00'))))
+        ];
+        
+        Log::info('Rate limit status checked', $status);
+        
+        return $status;
+    }
+
+    /**
+     * Clear cache for a specific analysis
+     */
+    public function clearCache($data)
+    {
+        $cacheKey = 'gemini_analysis_' . md5(json_encode($data));
+        $cleared = Cache::forget($cacheKey);
+        Cache::forget($cacheKey . '_timestamp');
+        
+        Log::info('Cache cleared', [
+            'cache_key' => $cacheKey,
+            'success' => $cleared
+        ]);
+        
+        return $cleared;
+    }
+
+    /**
+     * Clear all rate limits (useful for testing)
+     */
+    public function clearRateLimits()
+    {
+        $keys = Cache::get('gemini_rate_limit_keys', []);
+        foreach ($keys as $key) {
+            Cache::forget($key);
+        }
+        
+        Log::warning('All rate limits cleared');
+        
+        return true;
     }
 }
