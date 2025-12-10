@@ -976,115 +976,7 @@ table.dataTable tbody td {
         </div>
     </div>
     @endif
-
-    <!-- Budget Overview Section - Add this after Key Metrics and before AI Predictions -->
-@if($viewMode === 'month' && isset($budgetSummary))
-<div class="card">
-    <div class="card-header">
-        <div class="card-title">
-            <div class="card-icon">💰</div>
-            <span>Budget Overview - {{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }}</span>
-        </div>
-    </div>
     
-    <!-- Overall Budget Summary -->
-    <div style="background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%); padding: 24px; border-radius: 12px; margin-bottom: 24px;">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-            <div>
-                <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Total Budget</div>
-                <div style="font-size: 32px; font-weight: 800; color: #667eea;">M{{ number_format($budgetSummary['total_budget'], 2) }}</div>
-            </div>
-            <div>
-                <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Total Spent</div>
-                <div style="font-size: 32px; font-weight: 800; color: {{ $budgetSummary['total_spent'] > $budgetSummary['total_budget'] ? '#ef4444' : '#10b981' }};">M{{ number_format($budgetSummary['total_spent'], 2) }}</div>
-            </div>
-            <div>
-                <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Budget Used</div>
-                <div style="font-size: 32px; font-weight: 800; color: {{ $budgetSummary['budget_utilization'] > 100 ? '#ef4444' : '#667eea' }};">{{ number_format($budgetSummary['budget_utilization'], 1) }}%</div>
-            </div>
-            <div>
-                <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Remaining</div>
-                <div style="font-size: 32px; font-weight: 800; color: {{ $remainingBudget >= 0 ? '#10b981' : '#ef4444' }};">M{{ number_format(abs($remainingBudget), 2) }}</div>
-                <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">{{ $remainingBudget >= 0 ? 'Under Budget' : 'Over Budget' }}</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Category Budget Breakdown -->
-    <div style="margin-bottom: 16px;">
-        <h3 style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 16px;">Category Breakdown</h3>
-    </div>
-
-    @if(count($budgetSummary['categories']) > 0)
-        @foreach($budgetSummary['categories'] as $category)
-        <div class="category-item">
-            <div class="category-header">
-                <div class="category-name">{{ $category['name'] }}</div>
-                <div class="category-percent" style="color: {{ $category['budget'] > 0 ? ($category['expense'] / $category['budget'] > 1 ? '#ef4444' : '#667eea') : '#6b7280' }};">
-                    @if($category['budget'] > 0)
-                        {{ number_format(($category['expense'] / $category['budget']) * 100, 0) }}%
-                    @else
-                        No Budget
-                    @endif
-                </div>
-            </div>
-            
-            @if($category['budget'] > 0)
-            <div class="progress-bar">
-                <div class="progress-fill {{ ($category['expense'] / $category['budget']) > 1 ? 'danger' : (($category['expense'] / $category['budget']) > 0.8 ? 'warning' : '') }}" 
-                     style="width: {{ min(($category['expense'] / $category['budget']) * 100, 100) }}%"></div>
-            </div>
-            @endif
-            
-            <div class="category-details">
-                <div>
-                    <span style="font-weight: 600;">Spent:</span> M{{ number_format($category['expense'], 2) }}
-                    @if($category['budget'] > 0)
-                        <span style="color: #6b7280;"> / </span>
-                        <span style="font-weight: 600;">Budget:</span> M{{ number_format($category['budget'], 2) }}
-                    @endif
-                </div>
-                <div>
-                    @if($category['budget'] > 0)
-                        @if($category['remaining'] >= 0)
-                            <span style="color: #10b981; font-weight: 600;">M{{ number_format($category['remaining'], 2) }} left</span>
-                        @else
-                            <span style="color: #ef4444; font-weight: 600;">M{{ number_format(abs($category['remaining']), 2) }} over</span>
-                        @endif
-                    @else
-                        <span style="color: #f59e0b; font-weight: 600;">Unbudgeted</span>
-                    @endif
-                </div>
-            </div>
-            
-            <!-- Additional Details -->
-            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 12px; color: #6b7280;">
-                <div>
-                    <span style="font-weight: 600;">Transactions:</span> {{ $category['transaction_count'] }}
-                    @if($category['transaction_count'] > 0)
-                        <span style="color: #9ca3af;"> (Avg: M{{ number_format($category['avg_transaction'], 2) }})</span>
-                    @endif
-                </div>
-                <div style="text-align: right;">
-                    <span style="font-weight: 600;">6-Month Avg:</span> M{{ number_format($category['average_amount'], 2) }}
-                    @if($category['vs_average'] != 0)
-                        <span class="variance-badge {{ $category['vs_average'] > 0 ? 'positive' : 'negative' }}" style="margin-left: 8px;">
-                            {{ $category['vs_average'] > 0 ? '+' : '' }}{{ number_format($category['vs_average'], 0) }}%
-                        </span>
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endforeach
-    @else
-        <div style="text-align: center; padding: 40px; color: #6b7280;">
-            <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
-            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Budget Set</div>
-            <div style="font-size: 14px;">Create budgets for your categories to track spending</div>
-        </div>
-    @endif
-</div>
-@endif
 
     <!-- AI Predictions -->
     @if($viewMode === 'month' && isset($aiInsights['spending_trends']['forecast_next_3_months']) && count($aiInsights['spending_trends']['forecast_next_3_months']) > 0)
@@ -1515,63 +1407,68 @@ if (trendCtx) {
     });
 }
 @endif
-
-// Category Distribution Chart
+// Category Distribution Chart - Horizontal Bar (Better for many categories)
 @if(isset($categoryChart) && count($categoryChart) > 0)
 const categoryCtx = document.getElementById('categoryChart');
 if (categoryCtx) {
     new Chart(categoryCtx, {
-        type: 'doughnut',
+        type: 'bar',
         data: {
             labels: @json($categoryChart->pluck('category')),
             datasets: [{
+                label: 'Spending',
                 data: @json($categoryChart->pluck('amount')),
                 backgroundColor: [
                     '#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b',
-                    '#fa709a', '#fee140', '#30cfd0', '#a8edea', '#ff6b6b'
+                    '#fa709a', '#fee140', '#30cfd0', '#a8edea', '#ff6b6b',
+                    '#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b'
                 ],
                 borderWidth: 0,
-                hoverOffset: 15
+                borderRadius: 8,
+                barThickness: 30
             }]
         },
         options: {
+            indexAxis: 'y', // This makes it horizontal
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
                 legend: {
-                    position: 'right',
-                    labels: {
-                        padding: 20,
-                        usePointStyle: true,
-                        font: { size: 13, weight: '600' },
-                        generateLabels: function(chart) {
-                            const data = chart.data;
-                            if (data.labels.length && data.datasets.length) {
-                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
-                                return data.labels.map((label, i) => {
-                                    const value = data.datasets[0].data[i];
-                                    const percentage = ((value / total) * 100).toFixed(1);
-                                    return {
-                                        text: `${label} (${percentage}%)`,
-                                        fillStyle: data.datasets[0].backgroundColor[i],
-                                        hidden: false,
-                                        index: i
-                                    };
-                                });
-                            }
-                            return [];
-                        }
-                    }
+                    display: false // Hide legend since labels are on Y-axis
                 },
                 tooltip: {
                     callbacks: {
                         label: function(context) {
-                            const label = context.label || '';
-                            const value = context.parsed || 0;
+                            const value = context.parsed.x;
                             const total = context.dataset.data.reduce((a, b) => a + b, 0);
                             const percentage = ((value / total) * 100).toFixed(1);
-                            return `${label}: M${value.toFixed(2)} (${percentage}%)`;
+                            return `M${value.toFixed(2)} (${percentage}%)`;
                         }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: { 
+                        color: '#f3f4f6',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        callback: function(value) { 
+                            return 'M' + value.toFixed(0); 
+                        },
+                        font: { size: 12, weight: '500' }
+                    }
+                },
+                y: {
+                    grid: { 
+                        display: false,
+                        drawBorder: false
+                    },
+                    ticks: { 
+                        font: { size: 13, weight: '600' },
+                        color: '#1a1a1a'
                     }
                 }
             }
