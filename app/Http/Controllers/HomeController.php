@@ -22,36 +22,49 @@ class HomeController extends Controller
 
     public function index(Request $request)
     {
+        $viewMode = $request->input('view', 'month');
         $selectedMonth = $request->input('month', now()->format('Y-m'));
-        $currentDate = Carbon::parse($selectedMonth . '-01'); // Parse as first day of selected month
+        $selectedYear = $request->input('year', now()->year);
         $userId = auth()->id();
 
+        if ($viewMode === 'year') {
+            return $this->yearView($request, $selectedYear, $userId);
+        }
+
+        return $this->monthView($request, $selectedMonth, $userId);
+    }
+
+    private function monthView($request, $selectedMonth, $userId)
+    {
+        $viewMode = 'month';
+        $currentDate = Carbon::parse($selectedMonth . '-01');
+        
         // Define period (26th previous month to 25th current month)
-        // Example: If user selects "December 2024", period is Nov 26, 2024 to Dec 25, 2024
         $startDate = $currentDate->copy()->subMonth()->setDay(26)->startOfDay();
         $endDate = $currentDate->copy()->setDay(25)->endOfDay();
 
         // ========== FETCH CURRENT PERIOD DATA ==========
         $expenses = Expense::where('user_id', $userId)
-            ->whereBetween('date', [$startDate, $endDate])
+            ->where('date', '>=', $startDate)
+            ->where('date', '<=', $endDate)
             ->with('category')
             ->orderBy('date', 'desc')
             ->get();
 
         $incomes = Income::where('user_id', $userId)
-            ->whereBetween('date', [$startDate, $endDate])
+            ->where('date', '>=', $startDate)
+            ->where('date', '<=', $endDate)
             ->orderBy('date', 'desc')
             ->get();
 
-        // Combine all transactions with enhanced metadata
-        // Note: amount is automatically decrypted by the model accessor
+        // Combine all transactions - amounts are auto-decrypted by model accessors
         $allTransactions = $expenses->map(function ($expense) {
             $expenseDate = Carbon::parse($expense->date);
             return [
                 'id' => $expense->id,
-                'date' => $expense->date->format('Y-m-d H:i:s'),
+                'date' => $expenseDate->format('Y-m-d H:i:s'),
                 'description' => $expense->description,
-                'amount' => (float) $expense->amount, // Ensures decrypted amount is float
+                'amount' => $expense->amount, // Already decrypted by accessor
                 'category' => $expense->category->name ?? 'Uncategorized',
                 'category_id' => $expense->category_id,
                 'type' => 'expense',
@@ -64,9 +77,9 @@ class HomeController extends Controller
             $incomeDate = Carbon::parse($income->date);
             return [
                 'id' => $income->id,
-                'date' => $income->date->format('Y-m-d H:i:s'),
+                'date' => $incomeDate->format('Y-m-d H:i:s'),
                 'description' => $income->source ?? 'Income',
-                'amount' => (float) $income->amount, // Ensures decrypted amount is float
+                'amount' => $income->amount, // Already decrypted by accessor
                 'category' => 'Income',
                 'category_id' => null,
                 'type' => 'income',
@@ -77,14 +90,14 @@ class HomeController extends Controller
             ];
         }))->sortByDesc('date')->values()->toArray();
 
-        // Calculate totals - amounts are automatically decrypted by accessors
-        $totalIncome = (float) $incomes->sum('amount');
-        $totalExpenses = (float) $expenses->sum('amount');
+        // Calculate totals - sum() works with decrypted accessors
+        $totalIncome = $incomes->sum('amount');
+        $totalExpenses = $expenses->sum('amount');
         $netSavings = $totalIncome - $totalExpenses;
 
         // Get budgets
-        $currentMonthNumeric = (int) date('n', strtotime($selectedMonth));
-        $currentYearNumeric = (int) date('Y', strtotime($selectedMonth));
+        $currentMonthNumeric = (int) $currentDate->format('n');
+        $currentYearNumeric = (int) $currentDate->format('Y');
         
         $budgets = Budget::where('user_id', $userId)
             ->where('month', $currentMonthNumeric)
@@ -92,37 +105,31 @@ class HomeController extends Controller
             ->with('category')
             ->get();
 
-        // Budget amounts are automatically decrypted by accessors
-        $monthlyBudget = (float) $budgets->sum('amount');
-        $remainingBudget = $monthlyBudget - $totalExpenses;
+        $monthlyBudget = $budgets->sum('amount'); // Auto-decrypted
+        $remainingBudget = $monthlyBudget - $totalExpenses; // Total budget minus ALL expenses
 
-        // ========== ENHANCED CATEGORY ANALYSIS ==========
+        // ========== CATEGORY ANALYSIS ==========
         $categories = Category::all();
         $categoryBreakdown = [];
 
         foreach ($categories as $category) {
             $categoryExpenses = $expenses->where('category_id', $category->id);
-            $spent = (float) $categoryExpenses->sum('amount'); // Ensure float after decryption
+            $spent = $categoryExpenses->sum('amount');
             
             if ($spent > 0 || $budgets->where('category_id', $category->id)->count() > 0) {
                 $budget = $budgets->where('category_id', $category->id)->first();
-                
-                // Get 6-month historical average
                 $sixMonthAvg = $this->getCategoryAverage($userId, $category->id, $currentDate, 6);
-                
-                // Calculate variance vs historical average
                 $varianceVsAvg = $sixMonthAvg > 0 
                     ? (($spent - $sixMonthAvg) / $sixMonthAvg) * 100 
                     : 0;
                 
-                // Get top transactions for this category
                 $topTransactions = $categoryExpenses->sortByDesc('amount')->take(3)->pluck('description')->toArray();
                 
                 $categoryBreakdown[] = [
                     'name' => $category->name,
                     'expense' => $spent,
-                    'budget' => $budget ? (float) $budget->amount : 0,
-                    'remaining' => $budget ? ((float) $budget->amount - $spent) : 0,
+                    'budget' => $budget ? $budget->amount : 0,
+                    'remaining' => $budget ? ($budget->amount - $spent) : 0,
                     'average_amount' => $sixMonthAvg,
                     'vs_average' => $varianceVsAvg,
                     'transaction_count' => $categoryExpenses->count(),
@@ -135,12 +142,11 @@ class HomeController extends Controller
             }
         }
 
-        // Sort by spending
         usort($categoryBreakdown, function($a, $b) {
             return $b['expense'] <=> $a['expense'];
         });
 
-        // ========== COMPREHENSIVE HISTORICAL DATA (12 MONTHS) ==========
+        // ========== HISTORICAL DATA (12 MONTHS) ==========
         $historicalMonths = [];
         
         for ($i = 1; $i <= 12; $i++) {
@@ -148,14 +154,18 @@ class HomeController extends Controller
             $periodStart = $monthDate->copy()->subMonth()->setDay(26)->startOfDay();
             $periodEnd = $monthDate->copy()->setDay(25)->endOfDay();
 
-            $monthIncome = (float) Income::where('user_id', $userId)
-                ->whereBetween('date', [$periodStart, $periodEnd])
-                ->sum('amount');
+            $monthIncomes = Income::where('user_id', $userId)
+                ->where('date', '>=', $periodStart)
+                ->where('date', '<=', $periodEnd)
+                ->get();
 
-            $monthExpenses = (float) Expense::where('user_id', $userId)
-                ->whereBetween('date', [$periodStart, $periodEnd])
-                ->sum('amount');
+            $monthExpensesCollection = Expense::where('user_id', $userId)
+                ->where('date', '>=', $periodStart)
+                ->where('date', '<=', $periodEnd)
+                ->get();
 
+            $monthIncome = $monthIncomes->sum('amount');
+            $monthExpenses = $monthExpensesCollection->sum('amount');
             $monthSavings = $monthIncome - $monthExpenses;
 
             $historicalMonths[] = [
@@ -169,30 +179,38 @@ class HomeController extends Controller
         
         $historicalMonths = array_reverse($historicalMonths);
 
-        // ========== WEEKLY BREAKDOWN WITH ENHANCED STATUS ==========
+        // ========== WEEKLY BREAKDOWN ==========
         $weeklyBreakdown = $this->calculateWeeklyBreakdown($expenses, $startDate, $endDate);
 
-        // ========== DAILY SPENDING PATTERN ANALYSIS ==========
+        // ========== DAILY SPENDING PATTERN ==========
         $dailyPattern = $this->analyzeDailyPattern($expenses);
 
-        // ========== SPENDING VELOCITY & PROJECTION ==========
-        $daysElapsed = max(1, $startDate->diffInDays(min(now(), $endDate)) + 1);
-        $daysRemaining = max(0, now()->diffInDays($endDate, false));
+        // ========== SPENDING VELOCITY ==========
+        $now = Carbon::now();
+        if ($now->lt($startDate)) {
+            $daysElapsed = 0;
+            $daysRemaining = $startDate->diffInDays($endDate) + 1;
+        } elseif ($now->gt($endDate)) {
+            $daysElapsed = $startDate->diffInDays($endDate) + 1;
+            $daysRemaining = 0;
+        } else {
+            $daysElapsed = max(1, $startDate->diffInDays($now) + 1);
+            $daysRemaining = max(0, $now->diffInDays($endDate));
+        }
         
-        $currentPace = $totalExpenses / $daysElapsed;
+        $currentPace = $daysElapsed > 0 ? $totalExpenses / $daysElapsed : 0;
         
-        // Calculate historical average pace
-        $historicalAvg = collect($historicalMonths)->where('expenses', '>', 0)->avg('expenses') ?? 0;
+        $historicalAvg = collect($historicalMonths)
+            ->where('expenses', '>', 0)
+            ->avg('expenses') ?? 0;
         $historicalPace = $historicalAvg / 30;
         
-        // Calculate acceleration (% change vs historical)
         $acceleration = $historicalPace > 0 
             ? (($currentPace - $historicalPace) / $historicalPace) * 100 
             : 0;
 
         $projectedMonthEnd = $totalExpenses + ($currentPace * $daysRemaining);
         
-        // Determine status
         $velocityStatus = 'normal';
         if ($acceleration > 20) {
             $velocityStatus = 'fast';
@@ -208,7 +226,15 @@ class HomeController extends Controller
             'projected_month_end' => $projectedMonthEnd
         ];
 
-        // ========== PREPARE COMPREHENSIVE AI DATA ==========
+        // ========== BUDGET VS ACTUAL SUMMARY ==========
+        $budgetSummary = [
+            'total_budget' => $monthlyBudget,
+            'total_spent' => $totalExpenses,
+            'budget_utilization' => $monthlyBudget > 0 ? ($totalExpenses / $monthlyBudget) * 100 : 0,
+            'categories' => $categoryBreakdown
+        ];
+
+        // ========== AI DATA ==========
         $savingsRate = $totalIncome > 0 ? (($totalIncome - $totalExpenses) / $totalIncome) * 100 : 0;
 
         $aiData = [
@@ -230,12 +256,9 @@ class HomeController extends Controller
             'spending_velocity' => $spendingVelocity
         ];
 
-        // ========== GET AI INSIGHTS ==========
         $aiInsights = $this->geminiService->analyzeFinancialData($aiData);
 
-        // ========== ENHANCED CHART DATA ==========
-        
-        // Daily spending chart with moving average
+        // ========== CHART DATA ==========
         $dailySpending = $expenses->groupBy(function($expense) {
             return Carbon::parse($expense->date)->format('Y-m-d');
         })->map(function($group, $date) {
@@ -246,11 +269,10 @@ class HomeController extends Controller
             ];
         })->values();
 
-        // Category pie chart (top categories only)
         $categoryChart = collect($categoryBreakdown)
             ->filter(fn($c) => $c['expense'] > 0)
             ->sortByDesc('expense')
-            ->take(8) // Top 8 categories
+            ->take(8)
             ->map(function($cat) {
                 return [
                     'category' => $cat['name'],
@@ -259,28 +281,24 @@ class HomeController extends Controller
                 ];
             })->values();
 
-        // Monthly trend chart with all 12 months
-        $monthlyTrend = collect($historicalMonths)->map(function($month) {
-            return [
-                'month' => $month['month'],
-                'expenses' => $month['expenses'],
-                'income' => $month['income'],
-                'savings' => $month['savings'],
-                'savings_rate' => $month['savings_rate']
-            ];
-        });
+        $monthlyTrend = collect($historicalMonths);
 
         // ========== PREVIOUS PERIOD COMPARISON ==========
         $previousStartDate = $currentDate->copy()->subMonths(2)->setDay(26)->startOfDay();
         $previousEndDate = $currentDate->copy()->subMonth()->setDay(25)->endOfDay();
 
-        $previousIncome = (float) Income::where('user_id', $userId)
-            ->whereBetween('date', [$previousStartDate, $previousEndDate])
-            ->sum('amount');
+        $previousIncomes = Income::where('user_id', $userId)
+            ->where('date', '>=', $previousStartDate)
+            ->where('date', '<=', $previousEndDate)
+            ->get();
 
-        $previousExpenses = (float) Expense::where('user_id', $userId)
-            ->whereBetween('date', [$previousStartDate, $previousEndDate])
-            ->sum('amount');
+        $previousExpensesCollection = Expense::where('user_id', $userId)
+            ->where('date', '>=', $previousStartDate)
+            ->where('date', '<=', $previousEndDate)
+            ->get();
+
+        $previousIncome = $previousIncomes->sum('amount');
+        $previousExpenses = $previousExpensesCollection->sum('amount');
 
         $incomeChange = $previousIncome > 0 
             ? (($totalIncome - $previousIncome) / $previousIncome) * 100 
@@ -290,8 +308,6 @@ class HomeController extends Controller
             ? (($totalExpenses - $previousExpenses) / $previousExpenses) * 100 
             : ($totalExpenses > 0 ? 100 : 0);
 
-        // ========== ADDITIONAL INSIGHTS ==========
-        
         // Weekend vs Weekday spending
         $weekendSpending = collect($allTransactions)
             ->where('type', 'expense')
@@ -301,6 +317,7 @@ class HomeController extends Controller
         $weekdaySpending = $totalExpenses - $weekendSpending;
 
         return view('dashboard', compact(
+            'viewMode',
             'selectedMonth',
             'totalIncome',
             'totalExpenses',
@@ -311,6 +328,7 @@ class HomeController extends Controller
             'expenseChange',
             'allTransactions',
             'categoryBreakdown',
+            'budgetSummary',
             'aiInsights',
             'dailySpending',
             'categoryChart',
@@ -325,9 +343,101 @@ class HomeController extends Controller
         ));
     }
 
-    /**
-     * Calculate category average over N months
-     */
+    private function yearView($request, $selectedYear, $userId)
+    {
+        $viewMode = 'year';
+        
+        // Calculate year range (26th Dec previous year to 25th Dec current year)
+        $yearStart = Carbon::createFromDate($selectedYear - 1, 12, 26)->startOfDay();
+        $yearEnd = Carbon::createFromDate($selectedYear, 12, 25)->endOfDay();
+
+        // Get all year data
+        $yearExpensesCollection = Expense::where('user_id', $userId)
+            ->where('date', '>=', $yearStart)
+            ->where('date', '<=', $yearEnd)
+            ->get();
+
+        $yearIncomesCollection = Income::where('user_id', $userId)
+            ->where('date', '>=', $yearStart)
+            ->where('date', '<=', $yearEnd)
+            ->get();
+
+        $yearExpenses = $yearExpensesCollection->sum('amount');
+        $yearIncome = $yearIncomesCollection->sum('amount');
+        $yearSavings = $yearIncome - $yearExpenses;
+        $yearSavingsRate = $yearIncome > 0 ? (($yearIncome - $yearExpenses) / $yearIncome) * 100 : 0;
+
+        // Previous year comparison
+        $prevYearStart = Carbon::createFromDate($selectedYear - 2, 12, 26)->startOfDay();
+        $prevYearEnd = Carbon::createFromDate($selectedYear - 1, 12, 25)->endOfDay();
+
+        $prevYearExpensesCollection = Expense::where('user_id', $userId)
+            ->where('date', '>=', $prevYearStart)
+            ->where('date', '<=', $prevYearEnd)
+            ->get();
+
+        $prevYearExpenses = $prevYearExpensesCollection->sum('amount');
+
+        $yearOverYearChange = $prevYearExpenses > 0 
+            ? (($yearExpenses - $prevYearExpenses) / $prevYearExpenses) * 100 
+            : 0;
+
+        // Monthly breakdown
+        $yearlyMonthlyBreakdown = [];
+        
+        for ($i = 1; $i <= 12; $i++) {
+            $monthDate = Carbon::createFromDate($selectedYear, $i, 1);
+            $periodStart = $monthDate->copy()->subMonth()->setDay(26)->startOfDay();
+            $periodEnd = $monthDate->copy()->setDay(25)->endOfDay();
+
+            $monthIncomes = Income::where('user_id', $userId)
+                ->where('date', '>=', $periodStart)
+                ->where('date', '<=', $periodEnd)
+                ->get();
+
+            $monthExpensesCollection = Expense::where('user_id', $userId)
+                ->where('date', '>=', $periodStart)
+                ->where('date', '<=', $periodEnd)
+                ->get();
+
+            $monthIncome = $monthIncomes->sum('amount');
+            $monthExpenses = $monthExpensesCollection->sum('amount');
+
+            $yearlyMonthlyBreakdown[] = [
+                'month' => $monthDate->format('M'),
+                'income' => $monthIncome,
+                'expenses' => $monthExpenses,
+                'savings' => $monthIncome - $monthExpenses
+            ];
+        }
+
+        // Available years
+        $availableYears = Expense::where('user_id', $userId)
+            ->selectRaw('DISTINCT YEAR(date) as year')
+            ->orderBy('year', 'desc')
+            ->pluck('year')
+            ->toArray();
+        
+        if (empty($availableYears)) {
+            $availableYears = [now()->year];
+        }
+
+        $allTransactions = [];
+
+        return view('dashboard', compact(
+            'viewMode',
+            'selectedYear',
+            'yearIncome',
+            'yearExpenses',
+            'yearSavings',
+            'yearSavingsRate',
+            'yearOverYearChange',
+            'yearlyMonthlyBreakdown',
+            'availableYears',
+            'allTransactions'
+        ));
+    }
+
     private function getCategoryAverage($userId, $categoryId, $currentDate, $months = 6)
     {
         $total = 0;
@@ -338,10 +448,13 @@ class HomeController extends Controller
             $periodStart = $monthDate->copy()->subMonth()->setDay(26)->startOfDay();
             $periodEnd = $monthDate->copy()->setDay(25)->endOfDay();
 
-            $monthTotal = (float) Expense::where('user_id', $userId)
+            $monthExpenses = Expense::where('user_id', $userId)
                 ->where('category_id', $categoryId)
-                ->whereBetween('date', [$periodStart, $periodEnd])
-                ->sum('amount');
+                ->where('date', '>=', $periodStart)
+                ->where('date', '<=', $periodEnd)
+                ->get();
+
+            $monthTotal = $monthExpenses->sum('amount');
 
             if ($monthTotal > 0) {
                 $total += $monthTotal;
@@ -352,9 +465,6 @@ class HomeController extends Controller
         return $count > 0 ? $total / $count : 0;
     }
 
-    /**
-     * Calculate weekly breakdown with enhanced anomaly detection
-     */
     private function calculateWeeklyBreakdown($expenses, $startDate, $endDate)
     {
         $weeks = [];
@@ -362,7 +472,7 @@ class HomeController extends Controller
         $weekNumber = 1;
         $allWeekTotals = [];
 
-        // First pass: calculate all week totals
+        // First pass
         $tempWeekStart = $startDate->copy();
         while ($tempWeekStart->lte($endDate)) {
             $weekEnd = $tempWeekStart->copy()->addDays(6);
@@ -381,7 +491,7 @@ class HomeController extends Controller
 
         $avgWeekTotal = count($allWeekTotals) > 0 ? array_sum($allWeekTotals) / count($allWeekTotals) : 0;
 
-        // Second pass: build result with status and notable items
+        // Second pass
         while ($currentWeekStart->lte($endDate)) {
             $weekEnd = $currentWeekStart->copy()->addDays(6);
             if ($weekEnd->gt($endDate)) {
@@ -393,12 +503,9 @@ class HomeController extends Controller
                 return $expenseDate->between($currentWeekStart, $weekEnd);
             });
 
-            $weekTotal = (float) $weekExpenses->sum('amount');
-
-            // Get notable items (top 2 expenses)
+            $weekTotal = $weekExpenses->sum('amount');
             $notableItems = $weekExpenses->sortByDesc('amount')->take(2)->pluck('description')->toArray();
 
-            // Determine status
             $status = 'normal';
             if ($avgWeekTotal > 0) {
                 $deviation = (($weekTotal - $avgWeekTotal) / $avgWeekTotal) * 100;
@@ -426,9 +533,6 @@ class HomeController extends Controller
         return $weeks;
     }
 
-    /**
-     * Analyze daily spending patterns with enhanced insights
-     */
     private function analyzeDailyPattern($expenses)
     {
         $dayTotals = [];
@@ -448,7 +552,6 @@ class HomeController extends Controller
             ];
         }
 
-        // Find highest and lowest spending days
         $sortedByTotal = collect($dayTotals)->sortByDesc('total');
         $highest = $sortedByTotal->first();
         $highestDay = $sortedByTotal->keys()->first();

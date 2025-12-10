@@ -12,7 +12,7 @@ class Expense extends Model
 
     protected $fillable = ['amount', 'category_id', 'description', 'date', 'user_id'];
     protected $casts = [
-        'date' => 'datetime', // Automatically casts date to a Carbon instance
+        'date' => 'datetime',
     ];
     public function user()
 {

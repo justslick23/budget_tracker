@@ -11,7 +11,7 @@ class GeminiAIService
 {
     private $apiKey;
     private $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
-    private $model = 'gemini-2.0-flash-exp';
+    private $model = 'gemini-2.5-flash-exp';
     private $maxRetries = 3;
 
     public function __construct()
@@ -23,9 +23,6 @@ class GeminiAIService
         }
     }
 
-    /**
-     * Main analysis method - comprehensive AI insights
-     */
     public function analyzeFinancialData($data)
     {
         $startTime = microtime(true);
@@ -41,7 +38,6 @@ class GeminiAIService
             return $this->getFallbackResponse();
         }
 
-        // Create cache key based on data
         $cacheKey = 'gemini_analysis_' . md5(json_encode([
             'transactions' => count($data['transactions'] ?? []),
             'total_expenses' => $data['total_expenses'] ?? 0,
@@ -50,13 +46,11 @@ class GeminiAIService
             'categories' => count($data['category_budgets'] ?? [])
         ]));
         
-        // Check cache (30 minutes)
         if (Cache::has($cacheKey)) {
             Log::info('Returning cached AI analysis', ['request_id' => $requestId]);
             return Cache::get($cacheKey);
         }
 
-        // Rate limiting
         if (!$this->checkRateLimit($requestId)) {
             return $this->getFallbackResponse();
         }
@@ -70,7 +64,6 @@ class GeminiAIService
                 $result = $response->json();
                 $parsed = $this->parseAIResponse($result, $requestId);
                 
-                // Cache for 30 minutes
                 Cache::put($cacheKey, $parsed, now()->addMinutes(30));
                 
                 Log::info('AI analysis completed', [
@@ -94,12 +87,9 @@ class GeminiAIService
         }
     }
 
-    /**
-     * Build comprehensive prompt with enhanced analysis requirements
-     */
     private function buildEnhancedPrompt(array $data)
     {
-        $prompt = "You are an expert financial analyst AI with expertise in personal finance, behavioral economics, predictive modeling, and financial planning. Analyze this comprehensive financial dataset and provide actionable, personalized insights.\n\n";
+        $prompt = "You are a thoughtful, realistic financial advisor AI who understands that humans aren't robots. Analyze this financial data with empathy and practicality.\n\n";
         
         // ========== CURRENT PERIOD OVERVIEW ==========
         $prompt .= "=== CURRENT PERIOD ANALYSIS ===\n";
@@ -111,17 +101,38 @@ class GeminiAIService
         $prompt .= sprintf("Monthly Budget: M%.2f | Remaining: M%.2f\n", $data['monthly_budget'] ?? 0, $data['remaining_budget'] ?? 0);
         $prompt .= sprintf("Total Transactions: %d\n\n", count($data['transactions'] ?? []));
 
+        // ========== YEAR OVERVIEW (NEW) ==========
+        if (isset($data['year_overview'])) {
+            $yearData = $data['year_overview'];
+            $prompt .= "=== YEAR OVERVIEW ({$yearData['year']}) ===\n";
+            $prompt .= sprintf("Year-to-Date Income: M%.2f\n", $yearData['total_income']);
+            $prompt .= sprintf("Year-to-Date Expenses: M%.2f\n", $yearData['total_expenses']);
+            $prompt .= sprintf("Year-to-Date Savings: M%.2f (%.1f%% rate)\n", $yearData['total_savings'], $yearData['savings_rate']);
+            $prompt .= sprintf("Year-over-Year Change: %+.1f%%\n\n", $yearData['yoy_change']);
+            
+            $prompt .= "Monthly Performance This Year:\n";
+            foreach ($yearData['monthly_breakdown'] as $month) {
+                $prompt .= sprintf("  %s: Expenses M%.2f | Income M%.2f | Savings M%.2f\n",
+                    $month['full_month'],
+                    $month['expenses'],
+                    $month['income'],
+                    $month['savings']
+                );
+            }
+            $prompt .= "\n";
+        }
+
         // ========== SPENDING VELOCITY ==========
         if (isset($data['spending_velocity'])) {
             $vel = $data['spending_velocity'];
-            $prompt .= "=== SPENDING VELOCITY & MOMENTUM ===\n";
+            $prompt .= "=== SPENDING VELOCITY ===\n";
             $prompt .= sprintf("Current Daily Pace: M%.2f/day\n", $vel['current_pace'] ?? 0);
             $prompt .= sprintf("Historical Average Pace: M%.2f/day\n", $vel['historical_pace'] ?? 0);
             $prompt .= sprintf("Acceleration: %+.1f%% (%s trend)\n", $vel['acceleration'] ?? 0, $vel['status'] ?? 'normal');
             $prompt .= sprintf("Projected Month-End Total: M%.2f\n\n", $vel['projected_month_end'] ?? 0);
         }
 
-        // ========== HISTORICAL TREND ANALYSIS ==========
+        // ========== HISTORICAL TRENDS ==========
         if (!empty($data['historical_months'])) {
             $prompt .= "=== 12-MONTH HISTORICAL PATTERN ===\n";
             
@@ -131,192 +142,80 @@ class GeminiAIService
 
             $avgExpense = count($expenses) > 0 ? array_sum($expenses) / count($expenses) : 0;
             $avgIncome = count($incomes) > 0 ? array_sum($incomes) / count($incomes) : 0;
-            $avgSavings = count($savings) > 0 ? array_sum($savings) / count($savings) : 0;
             $stdDev = $this->calculateStdDev($expenses);
 
             $prompt .= sprintf("Average Monthly Expense: M%.2f (σ=%.2f)\n", $avgExpense, $stdDev);
-            $prompt .= sprintf("Average Monthly Income: M%.2f\n", $avgIncome);
-            $prompt .= sprintf("Average Monthly Savings: M%.2f (%.1f%% rate)\n", $avgSavings, $avgIncome > 0 ? ($avgSavings / $avgIncome * 100) : 0);
-            
-            if ($avgExpense > 0) {
-                $volatility = ($stdDev / $avgExpense) * 100;
-                $prompt .= sprintf("Spending Volatility: %.1f%% (coefficient of variation)\n\n", $volatility);
-            }
-            
-            $prompt .= "Monthly Breakdown:\n";
-            foreach ($data['historical_months'] as $month) {
-                $variance = $avgExpense > 0 ? ((($month['expenses'] ?? 0) - $avgExpense) / $avgExpense) * 100 : 0;
-                $prompt .= sprintf(
-                    "  %s: Expenses M%.2f (%+.1f%% vs avg) | Income M%.2f | Saved M%.2f (%.1f%% rate)\n",
-                    $month['month'],
-                    $month['expenses'] ?? 0,
-                    $variance,
-                    $month['income'] ?? 0,
-                    $month['savings'] ?? 0,
-                    $month['savings_rate'] ?? 0
-                );
-            }
-            $prompt .= "\n";
+            $prompt .= sprintf("Average Monthly Income: M%.2f\n\n", $avgIncome);
         }
 
-        // ========== CATEGORY DEEP DIVE ==========
+        // ========== CATEGORY ANALYSIS ==========
         if (!empty($data['category_budgets'])) {
-            $prompt .= "=== CATEGORY ANALYSIS ===\n";
+            $prompt .= "=== CATEGORY BREAKDOWN ===\n";
             foreach ($data['category_budgets'] as $cat) {
                 $prompt .= sprintf(
-                    "%s: Budget M%.2f | Spent M%.2f (%.1f%%) | Remaining M%.2f | %d transactions (M%.2f avg) | %+.1f%% vs 6-month avg\n",
+                    "%s: Budget M%.2f | Spent M%.2f (%.1f%%) | %d transactions | %+.1f%% vs 6-mo avg\n",
                     $cat['name'],
                     $cat['budget'] ?? 0,
                     $cat['expense'] ?? 0,
                     $cat['budget'] > 0 ? (($cat['expense'] / $cat['budget']) * 100) : 0,
-                    $cat['remaining'] ?? 0,
                     $cat['transaction_count'] ?? 0,
-                    $cat['avg_transaction'] ?? 0,
                     $cat['vs_average'] ?? 0
                 );
             }
             $prompt .= "\n";
         }
 
-        // ========== TRANSACTION PATTERNS ==========
+        // ========== TRANSACTIONS SAMPLE ==========
         if (!empty($data['transactions'])) {
-            $prompt .= "=== TRANSACTION-LEVEL INSIGHTS ===\n";
-            $prompt .= sprintf("Total Transactions: %d\n\n", count($data['transactions']));
-            
-            // By Category
-            $byCategory = $this->groupBy($data['transactions'], 'category');
-            $prompt .= "BY CATEGORY:\n";
-            foreach ($byCategory as $cat => $items) {
-                $total = array_sum(array_column($items, 'amount'));
-                $count = count($items);
-                $avg = $count > 0 ? $total / $count : 0;
-                $percentOfTotal = ($data['total_expenses'] ?? 0) > 0 ? ($total / ($data['total_expenses'] ?? 0)) * 100 : 0;
-                $prompt .= sprintf("  %s: M%.2f (%.1f%% of total, %d txns, M%.2f avg)\n", $cat, $total, $percentOfTotal, $count, $avg);
-            }
-            $prompt .= "\n";
-
-            // By Day of Week
-            $byDay = $this->groupBy($data['transactions'], 'day_of_week');
-            $prompt .= "BY DAY OF WEEK:\n";
-            $dayOrder = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-            foreach ($dayOrder as $day) {
-                if (isset($byDay[$day])) {
-                    $items = $byDay[$day];
-                    $total = array_sum(array_column($items, 'amount'));
-                    $prompt .= sprintf("  %s: M%.2f (%d txns)\n", $day, $total, count($items));
-                }
-            }
-            $prompt .= "\n";
-
-            // Recurring Expenses
-            $byDescription = $this->groupBy($data['transactions'], 'description');
-            $recurring = array_filter($byDescription, fn($items) => count($items) >= 2);
-            
-            if (!empty($recurring)) {
-                $prompt .= "RECURRING EXPENSES (2+ occurrences):\n";
-                foreach ($recurring as $desc => $items) {
-                    $total = array_sum(array_column($items, 'amount'));
-                    $avg = count($items) > 0 ? $total / count($items) : 0;
-                    $prompt .= sprintf("  \"%s\": %d times, M%.2f total, M%.2f avg\n", $desc, count($items), $total, $avg);
-                }
-                $prompt .= "\n";
-            }
-
-            // Top 10 Expenses
             $expenses = array_filter($data['transactions'], fn($t) => ($t['type'] ?? '') === 'expense');
             usort($expenses, fn($a, $b) => ($b['amount'] ?? 0) <=> ($a['amount'] ?? 0));
             $top10 = array_slice($expenses, 0, 10);
             
-            $prompt .= "TOP 10 LARGEST EXPENSES:\n";
+            $prompt .= "=== TOP 10 EXPENSES ===\n";
             foreach ($top10 as $i => $txn) {
                 $prompt .= sprintf(
-                    "  %d. M%.2f - %s [%s] on %s (%s)\n",
+                    "%d. M%.2f - %s [%s] on %s\n",
                     $i + 1,
                     $txn['amount'] ?? 0,
                     $txn['description'] ?? 'Unknown',
                     $txn['category'] ?? 'Unknown',
-                    $txn['date'] ?? 'Unknown',
-                    $txn['day_of_week'] ?? 'Unknown'
-                );
-            }
-            $prompt .= "\n";
-
-            // Anomaly Detection
-            $expenseCount = count($expenses);
-            $avgTransaction = $expenseCount > 0 ? (($data['total_expenses'] ?? 0) / $expenseCount) : 0;
-            $threshold = $avgTransaction * 3;
-            $anomalies = $expenseCount > 0 ? array_filter($expenses, fn($t) => ($t['amount'] ?? 0) > $threshold) : [];
-
-            if (!empty($anomalies)) {
-                $prompt .= "UNUSUAL TRANSACTIONS (>3x average):\n";
-                foreach ($anomalies as $txn) {
-                    $deviation = $avgTransaction > 0 ? ((($txn['amount'] ?? 0) - $avgTransaction) / $avgTransaction) * 100 : 0;
-                    $prompt .= sprintf(
-                        "  M%.2f - %s [%s] on %s (+%.0f%% vs avg)\n",
-                        $txn['amount'] ?? 0,
-                        $txn['description'] ?? 'Unknown',
-                        $txn['category'] ?? 'Unknown',
-                        $txn['date'] ?? 'Unknown',
-                        $deviation
-                    );
-                }
-                $prompt .= "\n";
-            }
-        }
-
-        // ========== WEEKLY & DAILY PATTERNS ==========
-        if (isset($data['weekly_breakdown'])) {
-            $prompt .= "=== WEEKLY BREAKDOWN ===\n";
-            foreach ($data['weekly_breakdown'] as $week) {
-                $prompt .= sprintf("Week %d (%s to %s): M%.2f (%s)\n", 
-                    $week['week_number'],
-                    $week['start_date'],
-                    $week['end_date'],
-                    $week['total'],
-                    $week['status']
+                    $txn['date'] ?? 'Unknown'
                 );
             }
             $prompt .= "\n";
         }
 
-        if (isset($data['daily_pattern'])) {
-            $prompt .= "=== DAILY SPENDING PATTERN ===\n";
-            foreach ($data['daily_pattern']['by_day'] as $day => $stats) {
-                $prompt .= sprintf("%s: M%.2f total, %d txns, M%.2f avg per transaction\n",
-                    $day, $stats['total'], $stats['count'], $stats['average']
-                );
-            }
-            $prompt .= "\n";
-        }
-
-        // ========== OUTPUT SCHEMA ==========
-        $prompt .= $this->getOutputSchema();
+        $prompt .= $this->getRealisticOutputSchema();
 
         return $prompt;
     }
 
-    /**
-     * Enhanced JSON output schema with more detailed requirements
-     */
-    private function getOutputSchema()
+    private function getRealisticOutputSchema()
     {
         return <<<'SCHEMA'
 === REQUIRED JSON OUTPUT SCHEMA ===
 
-Analyze ALL the data comprehensively and provide intelligent, data-driven insights in this exact JSON structure:
+IMPORTANT GUIDANCE ON RECOMMENDATIONS:
+- Be REALISTIC and HUMAN. Don't recommend cutting everything just because someone spent money.
+- Only suggest cutting things if they're GENUINELY excessive (e.g., 200%+ over budget consistently).
+- Understand that some expenses are NECESSARY (groceries, transport, utilities, healthcare).
+- HIGH spending doesn't always mean BAD spending. Context matters.
+- Don't give generic advice like "reduce eating out" unless it's truly excessive.
+- Focus on ACTUAL problems: budget overruns, unsustainable trends, missing financial goals.
+- Celebrate GOOD behavior when you see it.
+- If someone is within budget and tracking well, acknowledge that instead of finding problems.
 
 {
   "executive_summary": {
-    "overall_health_score": <integer 0-100, calculate based on: budget adherence (30%), savings rate (30%), spending stability (20%), trend direction (20%)>,
+    "overall_health_score": <integer 0-100, be generous - penalize only serious issues>,
     "financial_status": "excellent|good|fair|concerning|critical",
-    "key_insight": "One powerful, specific sentence about the user's current financial situation with actual numbers",
+    "key_insight": "One honest, specific sentence about their financial situation",
     "urgent_actions": [
-      "Specific action item based on actual overspending or concerning trends",
-      "Another urgent action if needed"
+      "Only include if there's a REAL urgent problem (over budget by 20%+, unsustainable trend, etc.)"
     ],
     "positive_highlights": [
-      "Actual achievement from the data (e.g., 'Saved 15% more than last month')",
-      "Another positive observation"
+      "Actual achievements worth celebrating",
+      "Areas where they're doing well"
     ]
   },
   
@@ -335,15 +234,15 @@ Analyze ALL the data comprehensively and provide intelligent, data-driven insigh
   
   "category_analysis": [
     {
-      "category": "exact category name from data",
+      "category": "exact category name",
       "budgeted": <number>,
       "spent": <number>,
       "remaining": <number>,
       "percent_used": <0-100+>,
       "status": "under_budget|on_track|close_to_limit|over_budget",
-      "variance_vs_historical": <percentage difference vs 6-month average>,
-      "recommendation": "Specific, actionable advice for this category",
-      "top_items": ["actual transaction 1", "actual transaction 2"],
+      "variance_vs_historical": <percentage>,
+      "recommendation": "Only provide if there's an actual issue. Be realistic.",
+      "top_items": ["actual items"],
       "transaction_count": <integer>,
       "avg_transaction": <number>,
       "trend": "increasing|decreasing|stable"
@@ -352,172 +251,116 @@ Analyze ALL the data comprehensively and provide intelligent, data-driven insigh
   
   "spending_trends": {
     "monthly_trend": "increasing|decreasing|stable|volatile",
-    "trend_percentage": <percentage change over last 3-6 months>,
-    "trend_description": "Detailed 2-3 sentence explanation of the trend with specific numbers",
+    "trend_percentage": <percentage>,
+    "trend_description": "Honest 2-3 sentence description",
     "forecast_next_3_months": [
       {
-        "month": "exact month name (e.g., 'January 2025')",
-        "predicted_spend": <calculate based on: historical average + current trend + seasonal factors>,
+        "month": "exact month name",
+        "predicted_spend": <based on actual trends, not pessimistic> dont use current month data please,
         "confidence": "high|medium|low",
-        "reasoning": "Brief explanation of prediction basis"
-      },
-      {
-        "month": "next month",
-        "predicted_spend": <number>,
-        "confidence": "high|medium|low",
-        "reasoning": "explanation"
-      },
-      {
-        "month": "third month",
-        "predicted_spend": <number>,
-        "confidence": "high|medium|low",
-        "reasoning": "explanation"
+        "reasoning": "Brief explanation"
       }
     ],
     "unusual_spikes": [
       {
         "date": "YYYY-MM-DD",
         "amount": <number>,
-        "description": "actual transaction description",
+        "description": "actual description",
         "category": "actual category",
-        "deviation_percentage": <how much % above normal>,
-        "likely_reason": "inferred reason based on description and context"
+        "deviation_percentage": <only include if >200% above normal>,
+        "likely_reason": "reasonable interpretation"
       }
     ],
-    "category_trends": [
-      {
-        "category": "name",
-        "trend": "increasing|decreasing|stable",
-        "change_percent": <based on recent vs historical>,
-        "interpretation": "What this means and recommended action"
-      }
-    ]
+    "category_trends": []
   },
   
   "weekly_daily_insights": {
     "avg_spend_per_week": <number>,
-    "weekly_breakdown": [
-      {
-        "week": "Week 1",
-        "total": <from data>,
-        "status": "high|normal|low",
-        "notable_items": ["significant transaction if any"]
-      }
-    ],
+    "weekly_breakdown": [],
     "day_of_week_pattern": {
-      "highest_spending_day": "actual day",
+      "highest_spending_day": "day",
       "highest_amount": <number>,
-      "lowest_spending_day": "actual day",
+      "lowest_spending_day": "day",
       "lowest_amount": <number>,
-      "pattern_interpretation": "Detailed insight about WHY this pattern exists based on transaction types and categories"
+      "pattern_interpretation": "Thoughtful insight about WHY, not judgmental"
     },
-    "abnormal_days": [
-      {
-        "date": "YYYY-MM-DD",
-        "amount": <number>,
-        "reason": "why this was abnormal",
-        "day_of_week": "day name"
-      }
-    ]
+    "abnormal_days": []
   },
   
   "smart_insights": {
     "overspending_areas": [
       {
-        "category": "name",
-        "amount_over": <vs budget or historical>,
-        "specific_items": ["actual transaction", "another transaction"],
-        "action": "specific recommendation",
+        "category": "only include if TRULY over budget (>120%)",
+        "amount_over": <actual overage>,
+        "specific_items": ["real items"],
+        "action": "practical, achievable advice",
         "priority": "high|medium|low"
       }
     ],
     "cost_cutting_opportunities": [
       {
-        "area": "specific area based on data",
-        "potential_savings": <realistic monthly number>,
+        "area": "only include REALISTIC opportunities",
+        "potential_savings": <realistic amount>,
         "difficulty": "easy|moderate|hard",
         "impact": "high|medium|low",
-        "specific_recommendation": "actionable step-by-step advice",
-        "items_to_reduce": ["recurring expense 1", "recurring expense 2"]
+        "specific_recommendation": "Practical advice, not 'stop spending'",
+        "items_to_reduce": ["specific items"]
       }
     ],
     "budget_adjustments": [
       {
-        "category": "name",
+        "category": "only suggest if budget is clearly wrong",
         "current_budget": <number>,
-        "suggested_budget": <based on historical average + 10% buffer>,
-        "reason": "data-driven justification with numbers"
+        "suggested_budget": <realistic adjustment>,
+        "reason": "data-driven justification"
       }
     ],
     "spending_habits": [
-      "Specific observation from actual patterns (e.g., 'You spend 40% more on weekends')",
-      "Another habit observation"
+      "Neutral observations, not judgments"
     ],
-    "anomalies": [
-      "Unusual pattern with specifics",
-      "Another anomaly if exists"
-    ]
+    "anomalies": []
   },
   
   "behavioral_insights": {
-    "spending_personality": "Detailed description of spending behavior (e.g., 'Disciplined weekday spender with weekend splurges', 'Consistent saver with occasional impulse purchases')",
-    "triggers": [
-      "What causes spending spikes based on data patterns"
-    ],
-    "strengths": [
-      "Positive behavior observed (with specifics)"
-    ],
-    "weaknesses": [
-      "Area needing improvement (with specifics)"
-    ],
-    "risk_factors": [
-      "Potential financial risk from observed patterns"
-    ],
-    "recommended_changes": [
-      "Behavioral change recommendation 1",
-      "Behavioral change recommendation 2"
-    ]
+    "spending_personality": "Honest description without judgment",
+    "triggers": ["actual patterns observed"],
+    "strengths": ["genuine strengths"],
+    "weaknesses": ["only REAL problems"],
+    "risk_factors": ["only if there are actual risks"],
+    "recommended_changes": ["practical, achievable changes"]
   },
   
   "actionable_recommendations": [
     {
       "priority": "high|medium|low",
-      "title": "Clear, actionable recommendation title",
-      "description": "Detailed explanation with actual numbers and reasoning from the data",
-      "expected_impact": "M<number> monthly savings" or "specific outcome",
+      "title": "Clear, non-preachy recommendation",
+      "description": "Realistic explanation with actual data",
+      "expected_impact": "honest impact estimate",
       "implementation_steps": [
-        "Specific step 1",
-        "Specific step 2",
-        "Specific step 3"
+        "Practical, specific steps"
       ],
       "difficulty": "easy|moderate|hard",
       "timeframe": "immediate|this_week|this_month",
-      "category": "actual category name or 'general'",
-      "success_metric": "How to measure success"
+      "category": "category or 'general'",
+      "success_metric": "How to measure"
     }
   ]
 }
 
-CRITICAL REQUIREMENTS:
-1. Use EXACT numbers, dates, descriptions, and categories from the provided data
-2. Calculate health score mathematically: (budget_adherence * 0.3) + (savings_rate_score * 0.3) + (stability_score * 0.2) + (trend_score * 0.2)
-3. Forecast must be based on: historical average + (current trend * weight) + volatility consideration
-4. Identify anomalies as transactions >3x the average transaction amount
-5. All percentages must be mathematically accurate to 1 decimal place
-6. Provide minimum 5-7 actionable recommendations ranked by priority and impact
-7. Pattern interpretations must cite actual transaction data
-8. Be honest and direct - if overspending is severe, state it clearly with numbers
-9. Return ONLY valid JSON - no markdown blocks, no explanations outside JSON
-10. Every insight must be backed by specific data points from the analysis
-11. Forecasts should account for detected trends (increasing/decreasing/stable/volatile)
-12. Budget adjustment suggestions must be realistic based on 6-12 month averages
+CRITICAL RULES FOR RECOMMENDATIONS:
+1. Quality over quantity - 2-3 GOOD recommendations beat 10 generic ones
+2. Only recommend changes for ACTUAL problems
+3. If they're doing well, SAY SO. Don't invent problems.
+4. High spending ≠ bad spending. Context matters.
+5. Essential categories (food, transport, utilities) - don't suggest cutting unless absurdly high
+6. Be encouraging, not judgmental
+7. Focus on sustainability and goals, not arbitrary frugality
+8. If budget is met and savings are good, celebrate that!
 
+Return ONLY valid JSON - no markdown, no explanations.
 SCHEMA;
     }
 
-    /**
-     * Call Gemini API with enhanced configuration
-     */
     private function callGeminiAPI($prompt, $requestId)
     {
         $url = $this->baseUrl . $this->model . ':generateContent?key=' . $this->apiKey;
@@ -531,7 +374,7 @@ SCHEMA;
                 ]
             ],
             'generationConfig' => [
-                'temperature' => 0.4, // Slightly higher for more creative insights
+                'temperature' => 0.5,
                 'topK' => 40,
                 'topP' => 0.95,
                 'maxOutputTokens' => 8192,
@@ -585,16 +428,12 @@ SCHEMA;
         return null;
     }
 
-    /**
-     * Parse AI response with enhanced validation
-     */
     private function parseAIResponse($result, $requestId)
     {
         try {
             if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
                 $text = $result['candidates'][0]['content']['parts'][0]['text'];
                 
-                // Clean any markdown
                 $text = preg_replace('/```json\s*/i', '', $text);
                 $text = preg_replace('/```\s*$/i', '', $text);
                 $text = trim($text);
@@ -627,9 +466,6 @@ SCHEMA;
         }
     }
 
-    /**
-     * Validate response structure
-     */
     private function validateResponse($response)
     {
         $requiredKeys = [
@@ -653,9 +489,6 @@ SCHEMA;
         return true;
     }
 
-    /**
-     * Rate limiting check
-     */
     private function checkRateLimit($requestId)
     {
         $key = 'gemini_rate_' . date('YmdHi');
@@ -670,9 +503,6 @@ SCHEMA;
         return true;
     }
 
-    /**
-     * Calculate standard deviation
-     */
     private function calculateStdDev($values)
     {
         $count = count($values);
@@ -684,34 +514,15 @@ SCHEMA;
         return sqrt($variance);
     }
 
-    /**
-     * Group array by key
-     */
-    private function groupBy($array, $key)
-    {
-        $result = [];
-        foreach ($array as $item) {
-            $groupKey = $item[$key] ?? 'unknown';
-            if (!isset($result[$groupKey])) {
-                $result[$groupKey] = [];
-            }
-            $result[$groupKey][] = $item;
-        }
-        return $result;
-    }
-
-    /**
-     * Enhanced fallback response
-     */
     private function getFallbackResponse()
     {
         return [
             'executive_summary' => [
                 'overall_health_score' => 50,
                 'financial_status' => 'unknown',
-                'key_insight' => 'AI analysis is temporarily unavailable. Your financial data has been recorded and basic metrics are available.',
-                'urgent_actions' => ['Review your budget categories', 'Check API configuration if this persists'],
-                'positive_highlights' => ['Your data tracking is active and functioning']
+                'key_insight' => 'AI analysis is temporarily unavailable. Your data is being tracked.',
+                'urgent_actions' => [],
+                'positive_highlights' => ['Your tracking is active']
             ],
             'kpi_summary' => [
                 'total_budget' => 0,
@@ -729,7 +540,7 @@ SCHEMA;
             'spending_trends' => [
                 'monthly_trend' => 'unknown',
                 'trend_percentage' => 0,
-                'trend_description' => 'Trend analysis pending AI service restoration',
+                'trend_description' => 'Trend analysis pending',
                 'forecast_next_3_months' => [],
                 'unusual_spikes' => [],
                 'category_trends' => []
@@ -742,7 +553,7 @@ SCHEMA;
                     'highest_amount' => 0,
                     'lowest_spending_day' => 'Unknown',
                     'lowest_amount' => 0,
-                    'pattern_interpretation' => 'Pattern analysis pending'
+                    'pattern_interpretation' => 'Analysis pending'
                 ],
                 'abnormal_days' => []
             ],
@@ -750,34 +561,18 @@ SCHEMA;
                 'overspending_areas' => [],
                 'cost_cutting_opportunities' => [],
                 'budget_adjustments' => [],
-                'spending_habits' => ['Manual review recommended'],
+                'spending_habits' => [],
                 'anomalies' => []
             ],
             'behavioral_insights' => [
-                'spending_personality' => 'Analysis pending - check back after AI service restoration',
+                'spending_personality' => 'Analysis pending',
                 'triggers' => [],
-                'strengths' => ['Consistent data tracking'],
+                'strengths' => ['Consistent tracking'],
                 'weaknesses' => [],
                 'risk_factors' => [],
-                'recommended_changes' => ['Enable AI analysis for personalized insights']
+                'recommended_changes' => []
             ],
-            'actionable_recommendations' => [
-                [
-                    'priority' => 'medium',
-                    'title' => 'Review Your Spending Manually',
-                    'description' => 'While AI analysis is unavailable, review your recent transactions and compare against your budget',
-                    'expected_impact' => 'Better awareness of spending patterns',
-                    'implementation_steps' => [
-                        'Review top 10 largest expenses',
-                        'Check category budgets vs actual spending',
-                        'Identify any unusual transactions'
-                    ],
-                    'difficulty' => 'easy',
-                    'timeframe' => 'immediate',
-                    'category' => 'general',
-                    'success_metric' => 'Completed manual review'
-                ]
-            ]
+            'actionable_recommendations' => []
         ];
     }
 }

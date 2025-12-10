@@ -3,6 +3,9 @@
 @section('content')
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
 
 <style>
 * {
@@ -95,6 +98,7 @@ body {
     display: flex;
     gap: 12px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .period-selector select,
@@ -119,6 +123,31 @@ body {
 .period-selector button:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+
+/* View Toggle */
+.view-toggle {
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 4px;
+    border-radius: 12px;
+}
+
+.view-toggle button {
+    padding: 8px 16px;
+    background: transparent;
+    border: none;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.view-toggle button.active {
+    background: white;
+    color: #667eea;
 }
 
 /* Health Score Card */
@@ -569,49 +598,64 @@ body {
     position: relative;
 }
 
-/* Transactions Table */
-.transactions-table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 8px;
+/* DataTables Customization */
+.dataTables_wrapper {
+    padding: 0;
 }
 
-.transactions-table thead th {
-    background: #f9fafb;
-    padding: 12px 16px;
-    text-align: left;
-    font-size: 12px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    color: #6b7280;
+.dataTables_filter input {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-left: 8px;
+}
+
+.dataTables_length select {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 6px 12px;
+    margin: 0 8px;
+}
+
+.dt-buttons {
+    margin-bottom: 16px;
+}
+
+.dt-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    margin-right: 8px !important;
+    transition: all 0.3s ease !important;
+}
+
+.dt-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3) !important;
+}
+
+table.dataTable thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
     font-weight: 600;
+    padding: 16px;
     border: none;
 }
 
-.transactions-table tbody tr {
-    background: white;
+table.dataTable tbody tr {
     transition: all 0.3s ease;
 }
 
-.transactions-table tbody tr:hover {
+table.dataTable tbody tr:hover {
     background: #f9fafb;
-    transform: scale(1.01);
 }
 
-.transactions-table tbody td {
+table.dataTable tbody td {
     padding: 16px;
-    border-top: 1px solid #f3f4f6;
     border-bottom: 1px solid #f3f4f6;
-}
-
-.transactions-table tbody td:first-child {
-    border-left: 1px solid #f3f4f6;
-    border-radius: 12px 0 0 12px;
-}
-
-.transactions-table tbody td:last-child {
-    border-right: 1px solid #f3f4f6;
-    border-radius: 0 12px 12px 0;
 }
 
 .transaction-date {
@@ -648,54 +692,36 @@ body {
     color: #1a1a1a;
 }
 
-/* Interactive Elements */
-.interactive-section {
+/* Year Overview Section */
+.year-overview-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 30px;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
 }
 
-.spending-heatmap {
-    background: white;
-    padding: 24px;
+.year-stat-card {
+    background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
+    padding: 20px;
     border-radius: 16px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    text-align: center;
 }
 
-.heatmap-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 8px;
-    margin-top: 16px;
-}
-
-.heatmap-day {
-    aspect-ratio: 1;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.heatmap-day:hover {
-    transform: scale(1.1);
-    z-index: 10;
-}
-
-.heatmap-day-label {
+.year-stat-label {
+    font-size: 12px;
     color: #6b7280;
-    margin-bottom: 2px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
 }
 
-.heatmap-day-amount {
-    font-size: 10px;
-    color: #374151;
+.year-stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 /* Responsive */
@@ -717,8 +743,13 @@ body {
         grid-template-columns: 1fr;
     }
     
-    .interactive-section {
-        grid-template-columns: 1fr;
+    .period-selector {
+        width: 100%;
+    }
+    
+    .period-selector select,
+    .period-selector button {
+        flex: 1;
     }
 }
 </style>
@@ -733,16 +764,35 @@ body {
                     Financial Intelligence
                 </h1>
                 <p>AI-powered insights from {{ count($allTransactions ?? []) }} transactions</p>
+                @if($viewMode === 'month')
                 <p style="font-size: 14px; opacity: 0.9; margin-top: 8px;">
                     📅 Period: {{ \Carbon\Carbon::parse($selectedMonth)->subMonth()->format('M d, Y') }} (26th) 
                     to {{ \Carbon\Carbon::parse($selectedMonth)->format('M d, Y') }} (25th)
                 </p>
+                @else
+                <p style="font-size: 14px; opacity: 0.9; margin-top: 8px;">
+                    📅 Year Overview: {{ $selectedYear }}
+                </p>
+                @endif
                 <div class="ai-badge">
                     <span>✨</span>
                     <span>Powered by Gemini AI</span>
                 </div>
             </div>
             <form method="GET" action="{{ route('dashboard.index') }}" class="period-selector">
+                <div class="view-toggle">
+                    <button type="button" class="{{ $viewMode === 'month' ? 'active' : '' }}" 
+                            onclick="document.querySelector('input[name=view]').value='month'; this.form.submit();">
+                        Month
+                    </button>
+                    <button type="button" class="{{ $viewMode === 'year' ? 'active' : '' }}"
+                            onclick="document.querySelector('input[name=view]').value='year'; this.form.submit();">
+                        Year
+                    </button>
+                </div>
+                <input type="hidden" name="view" value="{{ $viewMode }}">
+                
+                @if($viewMode === 'month')
                 <select name="month">
                     @for($i = 0; $i < 12; $i++)
                         @php $date = now()->subMonths($i)->format('Y-m'); @endphp
@@ -751,13 +801,70 @@ body {
                         </option>
                     @endfor
                 </select>
+                @else
+                <select name="year">
+                    @foreach($availableYears as $year)
+                        <option value="{{ $year }}" {{ $selectedYear == $year ? 'selected' : '' }}>
+                            {{ $year }}
+                        </option>
+                    @endforeach
+                </select>
+                @endif
                 <button type="submit">Update</button>
             </form>
         </div>
     </div>
 
+    @if($viewMode === 'year')
+    <!-- Year Overview Section -->
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="card-icon">📊</div>
+                <span>{{ $selectedYear }} Annual Performance</span>
+            </div>
+        </div>
+        
+        <div class="year-overview-grid">
+            <div class="year-stat-card">
+                <div class="year-stat-label">Total Income</div>
+                <div class="year-stat-value">M{{ number_format($yearIncome ?? 0, 2) }}</div>
+            </div>
+            <div class="year-stat-card">
+                <div class="year-stat-label">Total Expenses</div>
+                <div class="year-stat-value">M{{ number_format($yearExpenses ?? 0, 2) }}</div>
+            </div>
+            <div class="year-stat-card">
+                <div class="year-stat-label">Net Savings</div>
+                <div class="year-stat-value" style="{{ ($yearSavings ?? 0) >= 0 ? 'color: #10b981;' : 'color: #ef4444;' }}">
+                    M{{ number_format($yearSavings ?? 0, 2) }}
+                </div>
+            </div>
+            <div class="year-stat-card">
+                <div class="year-stat-label">Savings Rate</div>
+                <div class="year-stat-value">{{ number_format($yearSavingsRate ?? 0, 1) }}%</div>
+            </div>
+        </div>
+
+        @if(isset($yearOverYearChange))
+        <div class="alert {{ $yearOverYearChange > 0 ? 'alert-warning' : 'alert-success' }}">
+            <div class="alert-icon">{{ $yearOverYearChange > 0 ? '📈' : '📉' }}</div>
+            <div class="alert-content">
+                <strong>Year-over-Year Change</strong>
+                <div>Spending {{ $yearOverYearChange > 0 ? 'increased' : 'decreased' }} by {{ number_format(abs($yearOverYearChange), 1) }}% compared to last year</div>
+            </div>
+        </div>
+        @endif
+
+        <!-- Monthly Breakdown Chart -->
+        <div class="chart-container">
+            <canvas id="yearlyMonthlyChart"></canvas>
+        </div>
+    </div>
+    @endif
+
     <!-- Health Score Overview -->
-    @if(isset($aiInsights['executive_summary']))
+    @if($viewMode === 'month' && isset($aiInsights['executive_summary']))
     <div class="health-score-card">
         <div class="score-circle">
             <div class="score-value">{{ $aiInsights['executive_summary']['overall_health_score'] ?? 0 }}</div>
@@ -777,7 +884,7 @@ body {
     @endif
 
     <!-- Urgent Alerts -->
-    @if(isset($aiInsights['executive_summary']['urgent_actions']) && count($aiInsights['executive_summary']['urgent_actions']) > 0)
+    @if($viewMode === 'month' && isset($aiInsights['executive_summary']['urgent_actions']) && count($aiInsights['executive_summary']['urgent_actions']) > 0)
     <div class="alerts-section">
         @foreach($aiInsights['executive_summary']['urgent_actions'] as $action)
         <div class="alert alert-urgent">
@@ -791,7 +898,23 @@ body {
     </div>
     @endif
 
+    <!-- Positive Highlights -->
+    @if($viewMode === 'month' && isset($aiInsights['executive_summary']['positive_highlights']) && count($aiInsights['executive_summary']['positive_highlights']) > 0)
+    <div class="alerts-section">
+        @foreach($aiInsights['executive_summary']['positive_highlights'] as $highlight)
+        <div class="alert alert-success">
+            <div class="alert-icon">✓</div>
+            <div class="alert-content">
+                <strong>Great Job!</strong>
+                <div>{{ $highlight }}</div>
+            </div>
+        </div>
+        @endforeach
+    </div>
+    @endif
+
     <!-- Key Metrics -->
+    @if($viewMode === 'month')
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-label">Total Spent</div>
@@ -839,10 +962,132 @@ body {
                 <span>M{{ number_format(abs($netSavings ?? 0), 2) }} saved</span>
             </div>
         </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Weekend Spending</div>
+            <div class="stat-value">M{{ number_format($weekendSpending ?? 0, 2) }}</div>
+            <div class="stat-subtitle">M{{ number_format($weekdaySpending ?? 0, 2) }} on weekdays</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-label">Transaction Count</div>
+            <div class="stat-value">{{ count($allTransactions ?? []) }}</div>
+            <div class="stat-subtitle">Average: M{{ number_format(count($allTransactions ?? []) > 0 ? ($totalExpenses ?? 0) / count(array_filter($allTransactions ?? [], fn($t) => $t['type'] === 'expense')) : 0, 2) }} per transaction</div>
+        </div>
+    </div>
+    @endif
+
+    <!-- Budget Overview Section - Add this after Key Metrics and before AI Predictions -->
+@if($viewMode === 'month' && isset($budgetSummary))
+<div class="card">
+    <div class="card-header">
+        <div class="card-title">
+            <div class="card-icon">💰</div>
+            <span>Budget Overview - {{ \Carbon\Carbon::parse($selectedMonth)->format('F Y') }}</span>
+        </div>
+    </div>
+    
+    <!-- Overall Budget Summary -->
+    <div style="background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%); padding: 24px; border-radius: 12px; margin-bottom: 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <div>
+                <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Total Budget</div>
+                <div style="font-size: 32px; font-weight: 800; color: #667eea;">M{{ number_format($budgetSummary['total_budget'], 2) }}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Total Spent</div>
+                <div style="font-size: 32px; font-weight: 800; color: {{ $budgetSummary['total_spent'] > $budgetSummary['total_budget'] ? '#ef4444' : '#10b981' }};">M{{ number_format($budgetSummary['total_spent'], 2) }}</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Budget Used</div>
+                <div style="font-size: 32px; font-weight: 800; color: {{ $budgetSummary['budget_utilization'] > 100 ? '#ef4444' : '#667eea' }};">{{ number_format($budgetSummary['budget_utilization'], 1) }}%</div>
+            </div>
+            <div>
+                <div style="font-size: 12px; color: #6b7280; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Remaining</div>
+                <div style="font-size: 32px; font-weight: 800; color: {{ $remainingBudget >= 0 ? '#10b981' : '#ef4444' }};">M{{ number_format(abs($remainingBudget), 2) }}</div>
+                <div style="font-size: 12px; color: #6b7280; margin-top: 4px;">{{ $remainingBudget >= 0 ? 'Under Budget' : 'Over Budget' }}</div>
+            </div>
+        </div>
     </div>
 
+    <!-- Category Budget Breakdown -->
+    <div style="margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 700; color: #1a1a1a; margin-bottom: 16px;">Category Breakdown</h3>
+    </div>
+
+    @if(count($budgetSummary['categories']) > 0)
+        @foreach($budgetSummary['categories'] as $category)
+        <div class="category-item">
+            <div class="category-header">
+                <div class="category-name">{{ $category['name'] }}</div>
+                <div class="category-percent" style="color: {{ $category['budget'] > 0 ? ($category['expense'] / $category['budget'] > 1 ? '#ef4444' : '#667eea') : '#6b7280' }};">
+                    @if($category['budget'] > 0)
+                        {{ number_format(($category['expense'] / $category['budget']) * 100, 0) }}%
+                    @else
+                        No Budget
+                    @endif
+                </div>
+            </div>
+            
+            @if($category['budget'] > 0)
+            <div class="progress-bar">
+                <div class="progress-fill {{ ($category['expense'] / $category['budget']) > 1 ? 'danger' : (($category['expense'] / $category['budget']) > 0.8 ? 'warning' : '') }}" 
+                     style="width: {{ min(($category['expense'] / $category['budget']) * 100, 100) }}%"></div>
+            </div>
+            @endif
+            
+            <div class="category-details">
+                <div>
+                    <span style="font-weight: 600;">Spent:</span> M{{ number_format($category['expense'], 2) }}
+                    @if($category['budget'] > 0)
+                        <span style="color: #6b7280;"> / </span>
+                        <span style="font-weight: 600;">Budget:</span> M{{ number_format($category['budget'], 2) }}
+                    @endif
+                </div>
+                <div>
+                    @if($category['budget'] > 0)
+                        @if($category['remaining'] >= 0)
+                            <span style="color: #10b981; font-weight: 600;">M{{ number_format($category['remaining'], 2) }} left</span>
+                        @else
+                            <span style="color: #ef4444; font-weight: 600;">M{{ number_format(abs($category['remaining']), 2) }} over</span>
+                        @endif
+                    @else
+                        <span style="color: #f59e0b; font-weight: 600;">Unbudgeted</span>
+                    @endif
+                </div>
+            </div>
+            
+            <!-- Additional Details -->
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #e5e7eb; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 12px; color: #6b7280;">
+                <div>
+                    <span style="font-weight: 600;">Transactions:</span> {{ $category['transaction_count'] }}
+                    @if($category['transaction_count'] > 0)
+                        <span style="color: #9ca3af;"> (Avg: M{{ number_format($category['avg_transaction'], 2) }})</span>
+                    @endif
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-weight: 600;">6-Month Avg:</span> M{{ number_format($category['average_amount'], 2) }}
+                    @if($category['vs_average'] != 0)
+                        <span class="variance-badge {{ $category['vs_average'] > 0 ? 'positive' : 'negative' }}" style="margin-left: 8px;">
+                            {{ $category['vs_average'] > 0 ? '+' : '' }}{{ number_format($category['vs_average'], 0) }}%
+                        </span>
+                    @endif
+                </div>
+            </div>
+        </div>
+        @endforeach
+    @else
+        <div style="text-align: center; padding: 40px; color: #6b7280;">
+            <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+            <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">No Budget Set</div>
+            <div style="font-size: 14px;">Create budgets for your categories to track spending</div>
+        </div>
+    @endif
+</div>
+@endif
+
     <!-- AI Predictions -->
-    @if(isset($aiInsights['spending_trends']['forecast_next_3_months']) && count($aiInsights['spending_trends']['forecast_next_3_months']) > 0)
+    @if($viewMode === 'month' && isset($aiInsights['spending_trends']['forecast_next_3_months']) && count($aiInsights['spending_trends']['forecast_next_3_months']) > 0)
     <div class="card">
         <div class="card-header">
             <div class="card-title">
@@ -865,7 +1110,7 @@ body {
     @endif
 
     <!-- Spending Anomalies -->
-    @if(isset($aiInsights['spending_trends']['unusual_spikes']) && count($aiInsights['spending_trends']['unusual_spikes']) > 0)
+    @if($viewMode === 'month' && isset($aiInsights['spending_trends']['unusual_spikes']) && count($aiInsights['spending_trends']['unusual_spikes']) > 0)
     <div class="card">
         <div class="card-header">
             <div class="card-title">
@@ -889,8 +1134,24 @@ body {
     </div>
     @endif
 
-    <!-- Interactive Section: Category Performance & Weekly Pattern -->
-    <div class="interactive-section">
+    <!-- Historical Trend Chart -->
+    @if($viewMode === 'month')
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">
+                <div class="card-icon">📈</div>
+                <span>12-Month Trend Analysis</span>
+            </div>
+        </div>
+        <div class="chart-container">
+            <canvas id="trendChart"></canvas>
+        </div>
+    </div>
+    @endif
+
+    <!-- Category Performance & Weekly Pattern -->
+    @if($viewMode === 'month')
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
         <!-- Category Performance -->
         @if(isset($aiInsights['category_analysis']) && count($aiInsights['category_analysis']) > 0)
         <div class="card">
@@ -956,19 +1217,7 @@ body {
         </div>
         @endif
     </div>
-
-    <!-- Historical Trend Chart -->
-    <div class="card">
-        <div class="card-header">
-            <div class="card-title">
-                <div class="card-icon">📈</div>
-                <span>12-Month Trend Analysis</span>
-            </div>
-        </div>
-        <div class="chart-container">
-            <canvas id="trendChart"></canvas>
-        </div>
-    </div>
+    @endif
 
     <!-- Category Breakdown Chart -->
     <div class="card">
@@ -984,7 +1233,7 @@ body {
     </div>
 
     <!-- AI Recommendations -->
-    @if(isset($aiInsights['actionable_recommendations']) && count($aiInsights['actionable_recommendations']) > 0)
+    @if($viewMode === 'month' && isset($aiInsights['actionable_recommendations']) && count($aiInsights['actionable_recommendations']) > 0)
     <div class="card">
         <div class="card-header">
             <div class="card-title">
@@ -1013,7 +1262,7 @@ body {
     @endif
 
     <!-- Behavioral Insights -->
-    @if(isset($aiInsights['behavioral_insights']))
+    @if($viewMode === 'month' && isset($aiInsights['behavioral_insights']))
     <div class="card">
         <div class="card-header">
             <div class="card-title">
@@ -1057,40 +1306,34 @@ body {
     </div>
     @endif
 
-    <!-- Recent Transactions -->
+    <!-- All Transactions Table -->
     <div class="card">
         <div class="card-header">
             <div class="card-title">
                 <div class="card-icon">📝</div>
-                <span>Recent Transactions</span>
+                <span>All Transactions ({{ count($allTransactions ?? []) }})</span>
             </div>
         </div>
-        
-        <table class="transactions-table">
+    
+        <table id="transactionsTable" class="display" style="width:100%">
             <thead>
                 <tr>
                     <th>Date</th>
                     <th>Description</th>
                     <th>Category</th>
-                    <th style="text-align: right;">Amount</th>
+                    <th>Type</th>
+                    <th>Amount</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach(array_slice($allTransactions ?? [], 0, 10) as $txn)
+                @foreach($allTransactions ?? [] as $txn)
                 <tr>
-                    <td>
-                        <div class="transaction-date">{{ \Carbon\Carbon::parse($txn['date'])->format('M d, Y') }}</div>
-                    </td>
-                    <td>
-                        <div class="transaction-desc">{{ $txn['description'] }}</div>
-                    </td>
-                    <td>
-                        <span class="transaction-category">{{ $txn['category'] }}</span>
-                    </td>
-                    <td>
-                        <div class="transaction-amount {{ $txn['type'] }}">
-                            {{ $txn['type'] == 'income' ? '+' : '' }}M{{ number_format($txn['amount'], 2) }}
-                        </div>
+                    <td class="transaction-date">{{ \Carbon\Carbon::parse($txn['date'])->format('M d, Y g:i A') }}</td>
+                    <td class="transaction-desc">{{ $txn['description'] }}</td>
+                    <td><span class="transaction-category">{{ $txn['category'] }}</span></td>
+                    <td><span style="text-transform: capitalize;">{{ $txn['type'] }}</span></td>
+                    <td class="transaction-amount {{ $txn['type'] }}">
+                        {{ $txn['type'] == 'income' ? '+' : '-' }}M{{ number_format($txn['amount'], 2) }}
                     </td>
                 </tr>
                 @endforeach
@@ -1099,205 +1342,67 @@ body {
     </div>
 </div>
 
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-// Chart.js default configuration
-Chart.defaults.color = '#6b7280';
-Chart.defaults.font.family = "'Inter', sans-serif";
-Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-Chart.defaults.plugins.tooltip.padding = 12;
-Chart.defaults.plugins.tooltip.cornerRadius = 8;
-Chart.defaults.plugins.tooltip.titleFont = { size: 13, weight: '600' };
-Chart.defaults.plugins.tooltip.bodyFont = { size: 12 };
-
-// Trend Chart
-@if(isset($monthlyTrend) && count($monthlyTrend) > 0)
-const trendCtx = document.getElementById('trendChart');
-new Chart(trendCtx, {
-    type: 'line',
-    data: {
-        labels: @json($monthlyTrend->pluck('month')),
-        datasets: [
+$(document).ready(function() {
+    // Initialize DataTables
+    $('#transactionsTable').DataTable({
+        dom: 'Bfrtip',
+        buttons: [
             {
-                label: 'Expenses',
-                data: @json($monthlyTrend->pluck('expenses')),
-                borderColor: '#ef4444',
-                backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                pointBackgroundColor: '#ef4444',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
+                extend: 'copy',
+                text: '📋 Copy',
+                className: 'dt-button'
             },
             {
-                label: 'Income',
-                data: @json($monthlyTrend->pluck('income')),
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                pointBackgroundColor: '#10b981',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
+                extend: 'csv',
+                text: '📊 CSV',
+                className: 'dt-button'
             },
             {
-                label: 'Savings',
-                data: @json($monthlyTrend->pluck('savings')),
-                borderColor: '#667eea',
-                backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointRadius: 5,
-                pointHoverRadius: 7,
-                pointBackgroundColor: '#667eea',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2
+                extend: 'excel',
+                text: '📗 Excel',
+                className: 'dt-button'
+            },
+            {
+                extend: 'pdf',
+                text: '📄 PDF',
+                className: 'dt-button',
+                orientation: 'landscape',
+                pageSize: 'A4'
+            },
+            {
+                extend: 'print',
+                text: '🖨️ Print',
+                className: 'dt-button'
             }
-        ]
-    },
-    options: {
+        ],
         responsive: true,
-        maintainAspectRatio: false,
-        interaction: {
-            mode: 'index',
-            intersect: false
-        },
-        plugins: {
-            legend: {
-                position: 'top',
-                labels: {
-                    usePointStyle: true,
-                    padding: 20,
-                    font: {
-                        size: 13,
-                        weight: '600'
-                    }
-                }
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        return context.dataset.label + ': M' + context.parsed.y.toFixed(2);
-                    }
-                }
-            }
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                grid: {
-                    color: '#f3f4f6',
-                    drawBorder: false
-                },
-                ticks: {
-                    callback: function(value) {
-                        return 'M' + value;
-                    },
-                    font: {
-                        size: 12,
-                        weight: '500'
-                    }
-                }
-            },
-            x: {
-                grid: {
-                    display: false,
-                    drawBorder: false
-                },
-                ticks: {
-                    font: {
-                        size: 12,
-                        weight: '500'
-                    }
-                }
-            }
+        pageLength: 25,
+        order: [[0, 'desc']],
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        language: {
+            search: "Search transactions:",
+            lengthMenu: "Show _MENU_ transactions",
+            info: "Showing _START_ to _END_ of _TOTAL_ transactions",
+            infoEmpty: "No transactions available",
+            infoFiltered: "(filtered from _MAX_ total transactions)"
         }
-    }
-});
-@endif
+    });
 
-// Category Distribution Chart
-@if(isset($categoryChart) && count($categoryChart) > 0)
-const categoryCtx = document.getElementById('categoryChart');
-new Chart(categoryCtx, {
-    type: 'doughnut',
-    data: {
-        labels: @json($categoryChart->pluck('category')),
-        datasets: [{
-            data: @json($categoryChart->pluck('amount')),
-            backgroundColor: [
-                '#667eea',
-                '#764ba2',
-                '#f093fb',
-                '#4facfe',
-                '#43e97b',
-                '#fa709a',
-                '#fee140',
-                '#30cfd0',
-                '#a8edea',
-                '#ff6b6b'
-            ],
-            borderWidth: 0,
-            hoverOffset: 15
-        }]
-    },
-    options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'right',
-                labels: {
-                    padding: 20,
-                    usePointStyle: true,
-                    font: {
-                        size: 13,
-                        weight: '600'
-                    },
-                    generateLabels: function(chart) {
-                        const data = chart.data;
-                        if (data.labels.length && data.datasets.length) {
-                            const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
-                            return data.labels.map((label, i) => {
-                                const value = data.datasets[0].data[i];
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return {
-                                    text: `${label} (${percentage}%)`,
-                                    fillStyle: data.datasets[0].backgroundColor[i],
-                                    hidden: false,
-                                    index: i
-                                };
-                            });
-                        }
-                        return [];
-                    }
-                }
-            },
-            tooltip: {
-                callbacks: {
-                    label: function(context) {
-                        const label = context.label || '';
-                        const value = context.parsed || 0;
-                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                        const percentage = ((value / total) * 100).toFixed(1);
-                        return `${label}: M${value.toFixed(2)} (${percentage}%)`;
-                    }
-                }
-            }
-        }
-    }
-});
-@endif
-
-// Animate progress bars on load
-document.addEventListener('DOMContentLoaded', function() {
+    // Animate progress bars
     const progressBars = document.querySelectorAll('.progress-fill');
     progressBars.forEach(bar => {
         const width = bar.style.width;
@@ -1307,6 +1412,244 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100);
     });
 });
+
+// Chart.js Configuration
+Chart.defaults.color = '#6b7280';
+Chart.defaults.font.family = "'Inter', sans-serif";
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+Chart.defaults.plugins.tooltip.padding = 12;
+Chart.defaults.plugins.tooltip.cornerRadius = 8;
+
+// 12-Month Trend Chart
+@if($viewMode === 'month' && isset($monthlyTrend) && count($monthlyTrend) > 0)
+const trendCtx = document.getElementById('trendChart');
+if (trendCtx) {
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: @json($monthlyTrend->pluck('month')),
+            datasets: [
+                {
+                    label: 'Expenses',
+                    data: @json($monthlyTrend->pluck('expenses')),
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#ef4444',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'Income',
+                    data: @json($monthlyTrend->pluck('income')),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                },
+                {
+                    label: 'Savings',
+                    data: @json($monthlyTrend->pluck('savings')),
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointBackgroundColor: '#667eea',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: { size: 13, weight: '600' }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': M' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f3f4f6', drawBorder: false },
+                    ticks: {
+                        callback: function(value) { return 'M' + value; },
+                        font: { size: 12, weight: '500' }
+                    }
+                },
+                x: {
+                    grid: { display: false, drawBorder: false },
+                    ticks: { font: { size: 12, weight: '500' } }
+                }
+            }
+        }
+    });
+}
+@endif
+
+// Category Distribution Chart
+@if(isset($categoryChart) && count($categoryChart) > 0)
+const categoryCtx = document.getElementById('categoryChart');
+if (categoryCtx) {
+    new Chart(categoryCtx, {
+        type: 'doughnut',
+        data: {
+            labels: @json($categoryChart->pluck('category')),
+            datasets: [{
+                data: @json($categoryChart->pluck('amount')),
+                backgroundColor: [
+                    '#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b',
+                    '#fa709a', '#fee140', '#30cfd0', '#a8edea', '#ff6b6b'
+                ],
+                borderWidth: 0,
+                hoverOffset: 15
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        font: { size: 13, weight: '600' },
+                        generateLabels: function(chart) {
+                            const data = chart.data;
+                            if (data.labels.length && data.datasets.length) {
+                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                return data.labels.map((label, i) => {
+                                    const value = data.datasets[0].data[i];
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return {
+                                        text: `${label} (${percentage}%)`,
+                                        fillStyle: data.datasets[0].backgroundColor[i],
+                                        hidden: false,
+                                        index: i
+                                    };
+                                });
+                            }
+                            return [];
+                        }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${label}: M${value.toFixed(2)} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+@endif
+
+// Yearly Monthly Breakdown Chart
+@if($viewMode === 'year' && isset($yearlyMonthlyBreakdown))
+const yearlyCtx = document.getElementById('yearlyMonthlyChart');
+if (yearlyCtx) {
+    new Chart(yearlyCtx, {
+        type: 'bar',
+        data: {
+            labels: @json(array_column($yearlyMonthlyBreakdown, 'month')),
+            datasets: [
+                {
+                    label: 'Income',
+                    data: @json(array_column($yearlyMonthlyBreakdown, 'income')),
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)',
+                    borderColor: '#10b981',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Expenses',
+                    data: @json(array_column($yearlyMonthlyBreakdown, 'expenses')),
+                    backgroundColor: 'rgba(239, 68, 68, 0.8)',
+                    borderColor: '#ef4444',
+                    borderWidth: 2
+                },
+                {
+                    label: 'Savings',
+                    data: @json(array_column($yearlyMonthlyBreakdown, 'savings')),
+                    backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                    borderColor: '#667eea',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20,
+                        font: { size: 13, weight: '600' }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': M' + context.parsed.y.toFixed(2);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f3f4f6', drawBorder: false },
+                    ticks: {
+                        callback: function(value) { return 'M' + value; },
+                        font: { size: 12, weight: '500' }
+                    }
+                },
+                x: {
+                    grid: { display: false, drawBorder: false },
+                    ticks: { font: { size: 12, weight: '500' } }
+                }
+            }
+        }
+    });
+}
+@endif
 </script>
 
 @endsection
