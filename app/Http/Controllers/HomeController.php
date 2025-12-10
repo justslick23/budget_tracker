@@ -272,7 +272,6 @@ class HomeController extends Controller
         $categoryChart = collect($categoryBreakdown)
             ->filter(fn($c) => $c['expense'] > 0)
             ->sortByDesc('expense')
-            ->take(8)
             ->map(function($cat) {
                 return [
                     'category' => $cat['name'],
