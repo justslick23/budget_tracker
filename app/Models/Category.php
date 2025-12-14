@@ -15,6 +15,8 @@ class Category extends Model
         'user_id'
     ];
 
+/*************  ✨ Windsurf Command ⭐  *************/
+/*******  186188b1-9a47-4f21-99b6-d5e300f4e5b7  *******/
     public function user()
 {
     return $this->belongsTo(User::class);

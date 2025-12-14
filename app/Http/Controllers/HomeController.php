@@ -437,32 +437,40 @@ class HomeController extends Controller
         ));
     }
 
-    private function getCategoryAverage($userId, $categoryId, $currentDate, $months = 6)
+    private function getCategoryAverage($userId, $categoryId, Carbon $currentDate, $months = 6)
     {
         $total = 0;
         $count = 0;
-
+    
         for ($i = 1; $i <= $months; $i++) {
-            $monthDate = $currentDate->copy()->subMonths($i);
-            $periodStart = $monthDate->copy()->subMonth()->setDay(26)->startOfDay();
-            $periodEnd = $monthDate->copy()->setDay(25)->endOfDay();
-
-            $monthExpenses = Expense::where('user_id', $userId)
+    
+            // Custom financial month: 26 → 25
+            $periodEnd = $currentDate->copy()
+                ->subMonths($i)
+                ->setDay(25)
+                ->endOfDay();
+    
+            $periodStart = $periodEnd->copy()
+                ->subMonth()
+                ->addDay()
+                ->startOfDay(); // 26th
+    
+            $expenses = Expense::where('user_id', $userId)
                 ->where('category_id', $categoryId)
-                ->where('date', '>=', $periodStart)
-                ->where('date', '<=', $periodEnd)
+                ->whereBetween('date', [$periodStart, $periodEnd])
                 ->get();
-
-            $monthTotal = $monthExpenses->sum('amount');
-
+    
+            $monthTotal = $expenses->sum('amount'); // decrypted via accessor
+    
             if ($monthTotal > 0) {
                 $total += $monthTotal;
                 $count++;
             }
         }
-
-        return $count > 0 ? $total / $count : 0;
+    
+        return $count > 0 ? round($total / $count, 2) : 0;
     }
+    
 
     private function calculateWeeklyBreakdown($expenses, $startDate, $endDate)
     {
