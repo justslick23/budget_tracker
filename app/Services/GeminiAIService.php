@@ -11,7 +11,7 @@ class GeminiAIService
 {
     private $apiKey;
     private $baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/';
-    private $model = 'gemini-2.5-flash-exp';
+    private $model = 'gemini-3-pro';
     private $maxRetries = 3;
 
     public function __construct()
